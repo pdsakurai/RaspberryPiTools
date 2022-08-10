@@ -46,13 +46,16 @@ fi
 ############
 
 function log() {
-    local -r text="$( [ "$debugMode" == "true" ] && printf "!DEBUG MODE! " )${@:?Cannot do empty logging}"
+    local text="$( [ "$debugMode" == "true" ] && printf "!DEBUG MODE! " )${@:?Cannot do empty logging}"
     local -r tag="$FILE_NAME[$$]"
     local -r time_now="$( date "+%Y-%m-%dT%H:%M:%S" )"
     logger -t "$tag" "$text"
-    echo "<$time_now> $tag: $text"
+
+    text="<$time_now> $tag: $text"
+    echo "text"
+
     touch $logFile
-    echo "<$time_now> $tag: $text" >> $logFile
+    sed -i "1 s|^|$text\n|" "$logFile"
 }
 
 move(){
