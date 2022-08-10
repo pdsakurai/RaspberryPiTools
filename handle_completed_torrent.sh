@@ -95,22 +95,24 @@ move(){
     fi
 }
 
-delete(){
-    local -r fullFileOrFolderPath=$1
+function delete() {
+    local -r entry=${1:?Missing: Entry to delete}
 
-    what=""
-    if [[ -f "$fullFileOrFolderPath" ]]; then
-        $deleteCommand "$fullFileOrFolderPath"
-        what="file"
-    elif [[ -d "$fullFileOrFolderPath" ]]; then
-        $deleteCommand --recursive --force "$fullFileOrFolderPath"
-        what="folder"
+    local type=""
+    if [ -f "$entry" ]; then
+        $deleteCommand "$entry"
+        type="file"
+    elif [ -d "$entry" ]; then
+        $deleteCommand --recursive --force "$entry"
+        type="folder"
     fi
 
-    if [[ -e "$fullFileOrFolderPath" ]] || [[ -d "$fullFileOrFolderPath" ]]; then
-        log "Cannot delete $what: \"$fullFileOrFolderPath\""
+    if [ -e "$entry" ]; then
+        log "Cannot delete $type: \"$entry\""
+        return 1
     else
-        log "Deleted $what: \"$fullFileOrFolderPath\""
+        log "Deleted $type: \"$entry\""
+        return 0
     fi
 }
 
