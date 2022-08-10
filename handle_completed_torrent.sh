@@ -55,6 +55,18 @@ function log() {
     sed -i "1 s|^|<$time_now> $tag: $text\n|" "$logFile"
 }
 
+function rename() {
+    local -r old="${1:?Missing: Old name}"
+    local -r new="${1:?Missing: New name}"
+
+    [ -f "$old" ] \
+        && local -r type="file" \
+        || local -r type="folder"
+    
+    $renameCommand "$old" "$new"
+    log "Renamed $type: \"$base_directory/$folder_name_original\" to \"$folder_name_cleaned\""
+}
+
 move(){
     local -r sourceFullPath=$1
     local -r destinationDirectory=$2
