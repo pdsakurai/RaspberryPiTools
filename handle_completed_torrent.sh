@@ -263,7 +263,8 @@ if [[ ${torrentPath##*/} == *$keywordInTorrentNameForPsa* ]]; then
         if [[ ${torrentPath##*/} =~ $regexFor3DMovies ]]; then
             processDownloaded3DMovieFromPSA "$torrentPath"
         else
-            processDownloadedMovieFromPSA "$torrentPath"
+            . ./completed_torrent_handlers/PSA.sh
+            process_movie "$torrentPath"
         fi
     fi
 
