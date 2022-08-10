@@ -45,16 +45,14 @@ fi
 
 ############
 
-log(){
-    local -r message=$1
-    local -r timeNow=$(date "+%Y-%m-%dT%H:%M:%S")
-    
+function log() {
+    local -r text="$( [ "$debugMode" == "true" ] && printf "!DEBUG MODE! " )${@:?Cannot do empty logging}"
+    local -r tag="$FILE_NAME[$$]"
+    local -r time_now="$( date "+%Y-%m-%dT%H:%M:%S" )"
+    logger -t "$tag" "$text"
+    echo "<$time_now> $tag: $text"
     touch $logFile
-    if [[ $debugMode == true ]]; then
-        echo "<$timeNow> [DEBUG MODE] $message" >> $logFile
-    else
-        echo "<$timeNow> $message" >> $logFile
-    fi
+    echo "<$time_now> $tag: $text" >> $logFile
 }
 
 move(){
