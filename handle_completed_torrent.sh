@@ -1,8 +1,5 @@
 #!/bin/bash
 
-readonly booleanTrue=0
-readonly booleanFalse=1
-
 #Provided by Transmission
 readonly torrentDir="$TR_TORRENT_DIR"
 readonly torrentName="$TR_TORRENT_NAME"
@@ -238,10 +235,10 @@ isFileNameTaggedWithSeasonAndEpisode() {
     local -r l_fileName=$1
 
     if [[ $l_fileName =~ S[0-9]+E[0-9]+ ]]; then
-        return $booleanTrue
+        return 0
     fi
 
-    return $booleanFalse
+    return 1
 }
 
 ############
