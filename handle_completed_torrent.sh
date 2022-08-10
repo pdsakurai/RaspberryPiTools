@@ -52,7 +52,7 @@ function log() {
     logger -t "$tag" "$text"
 
     text="<$time_now> $tag: $text"
-    echo "text"
+    echo "$text"
 
     touch $logFile
     sed -i "1 s|^|$text\n|" "$logFile"
