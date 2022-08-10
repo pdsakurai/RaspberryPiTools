@@ -64,7 +64,7 @@ function rename() {
         || local -r type="folder"
     
     $renameCommand "$old" "$new"
-    log "Renamed $type: \"$base_directory/$folder_name_original\" to \"$folder_name_cleaned\""
+    log "Renamed $type: \"$old\" to \"$new\""
 }
 
 move(){
