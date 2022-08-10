@@ -51,11 +51,8 @@ function log() {
     local -r time_now="$( date "+%Y-%m-%dT%H:%M:%S" )"
     logger -t "$tag" "$text"
 
-    text="<$time_now> $tag: $text"
-    echo "$text"
-
     touch $logFile
-    sed -i "1 s|^|$text\n|" "$logFile"
+    sed -i "1 s|^|<$time_now> $tag: $text\n|" "$logFile"
 }
 
 move(){
