@@ -18,12 +18,11 @@ else
 fi
 
 #Environment
-readonly directoryRoot="/mnt/eHDD/Videos"
-readonly directoryAnime="$directoryRoot/Anime"
-readonly directoryMovie="$directoryRoot/Movie"
-readonly directoryMovie3D="$directoryRoot/Movie - 3D"
-readonly directoryTvShow="$directoryRoot/TV show"
-readonly logFile="/mnt/eHDD/Torrent/log.txt"
+readonly dir_root="/mnt/eHDD/Videos"
+readonly dir_anime="$dir_root/Anime"
+readonly dir_movie="$dir_root/Movie"
+readonly dir_tvshow="$dir_root/TV show"
+readonly log_file="/mnt/eHDD/Torrent/log.txt"
 
 #Commands
 readonly is_debug_mode=true
@@ -50,8 +49,8 @@ function log() {
     local -r time_now="$( date "+%Y-%m-%dT%H:%M:%S" )"
     logger -t "$tag" "$text"
 
-    touch $logFile
-    sed -i "1 s|^|<$time_now> $tag: $text\n|" "$logFile"
+    touch $log_file
+    sed -i "1 s|^|<$time_now> $tag: $text\n|" "$log_file"
 }
 
 function get_base_directory() {
@@ -245,9 +244,9 @@ if [[ ${torrentPath##*/} == *$keywordInTorrentNameForJudas* ]] \
 
     if [[ -f "$torrentPath" ]]; then
         if [[ ${torrentPath##*/} =~ \ -\ [0-9]+ ]] || isFileNameTaggedWithSeasonAndEpisode "${torrentPath##*/}"; then
-            processDownloadedAnimeFromJudas "$torrentPath" "$directoryAnime"
+            processDownloadedAnimeFromJudas "$torrentPath" "$dir_anime"
         else
-            processDownloadedAnimeFromJudas "$torrentPath" "$directoryMovie"
+            processDownloadedAnimeFromJudas "$torrentPath" "$dir_movie"
         fi
     fi
 
