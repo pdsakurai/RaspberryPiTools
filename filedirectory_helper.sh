@@ -2,7 +2,7 @@
 
 [ -n "$_filedirectory_helper_sh" ] \
     && return \
-    || readonly _filedirectory_helper_sh="$FILE_NAME[$$]"
+    || readonly _filedirectory_helper_sh="filedirectory_helper.sh[$$]"
 
 if [[ -n "$is_debug_mode" ]]; then
     function noop() {

@@ -2,7 +2,7 @@
 
 [ -n "$_PSA_sh" ] \
     && return \
-    || readonly _PSA_sh="$FILE_NAME[$$]"
+    || readonly _PSA_sh="PSA.sh[$$]"
 
 function is_from_PSA() {
     local -r torrent_path="${1:?Missing: Torrent path}"

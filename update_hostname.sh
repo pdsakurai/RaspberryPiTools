@@ -6,7 +6,7 @@ readonly SECRET_KEY="${2:?Missing: Secret key}"
 
 #Don't edit anything below this line
 log() {
-    local tag="$FILE_NAME[$$]"
+    local tag="update_hostname.sh[$$]"
     echo "$tag: ${@:?Cannot do empty logging}"
     logger -t "$tag" "$@"
 }
