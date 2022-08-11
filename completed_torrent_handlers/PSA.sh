@@ -31,17 +31,16 @@ function process_movie() {
 
     local -r folder_name_original="${torrent_path##*/}"
     local -r folder_name_cleaned="$( clean_text_using_sed "$folder_name_original" ( "s/(\?\([0-9]\{4\}\))\?\(.*$\)/\(\1)/" ) )"
-    local -r base_directory="${torrent_path%/$folder_name_original}"
-
     for entry_name in $( ls "$torrent_path" ); do
-        if [[ -f "$torrent_path/$entry_name" ]] && [[ ${entry_name%.*} == $folder_name_original ]]; then
-            rename "$torrent_path/$entry_name" "$folder_name_cleaned"
+        local -r entry_full_file_path="$torrent_path/$entry_name"
+        if [[ -f "$torrent_path/$entry_name" ]] && [[ "${entry_name%.*}" == "$folder_name_original" ]]; then
+            rename "$entry_full_file_path" "$folder_name_cleaned"
         else
-            delete "$torrent_path/$entry_name"
+            delete "$entry_full_file_path"
         fi
     done
 
-    local -r cleaned_torrent_path="$( rename "$base_directory/$folder_name_original" "$folder_name_cleaned" )"
+    local -r cleaned_torrent_path="$( rename "$torrent_path" "$folder_name_cleaned" )"
     move "$cleaned_torrent_path" "$directoryMovie"
 }
 
