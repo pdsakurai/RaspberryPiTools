@@ -4,8 +4,7 @@
     && return \
     || readonly _filedirectory_helper_sh="$FILE_NAME[$$]"
 
-readonly is_debug_mode=true
-if [[ $is_debug_mode == true ]]; then
+if [[ -n "$is_debug_mode" ]]; then
     function noop() {
         local -r nothing=""
     }
@@ -21,7 +20,7 @@ else
 fi
 
 function log() {
-    local text="$( [[ "$is_debug_mode" == "true" ]] && printf "!DEBUG MODE! " )${@:?Cannot do empty logging}"
+    local text="$( [[ -n "$is_debug_mode" ]] && printf "!DEBUG MODE! " )${@:?Cannot do empty logging}"
     local -r time_now="$( date "+%Y-%m-%dT%H:%M:%S" )"
     logger -t "$_filedirectory_helper_sh" "$text"
 

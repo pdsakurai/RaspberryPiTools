@@ -9,10 +9,11 @@ if [[ -n "$TR_TORRENT_DIR"  ]] && [[ -n "$TR_TORRENT_NAME" ]]; then
 #Provided by aria2c
 elif [[ -n "$1" ]] && [[ -n "$2" ]] && [[ -n "$3" ]]; then
     readonly torrent_path="$3"
-elif [[ -e "$1" ]]; then
+elif [[ -e "$1" ]] && [[ -z "$2" ]]; then
+    readonly is_debug_mode="true"
     readonly torrent_path="$1"
 else
-    echo "No arguments found."
+    echo "No valid arguments found."
     exit 1
 fi
 
