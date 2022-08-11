@@ -51,9 +51,9 @@ function process_tvshow(){
     TV.Show.2022.S01E01.Title.of.episode.720p.+*HEVC-PSA.mkv'''
     if [[ -f "$torrent_path" ]]; then
         local -r file_name_cleaned="$( clean_text_using_sed "${torrent_path##*/}" )"
-        local -r full_file_path_postrenaming="$( rename "$torrent_path" "$file_name_cleaned" )"
-        local -r tv_show_title="$( printf "${full_file_path_postrenaming##*/}" | sed "s/.S[0-9]\+E[0-9]\+.*//" )"
-        move "$full_file_path_postrenaming" "$directoryTvShow/$tv_show_title"
+        local -r cleaned_torrent_path="$( rename "$torrent_path" "$file_name_cleaned" )"
+        local -r tv_show_title="$( printf "${cleaned_torrent_path##*/}" | sed "s/.S[0-9]\+E[0-9]\+.*//" )"
+        move "$cleaned_torrent_path" "$directoryTvShow/$tv_show_title"
 
     '''Expected structure #2:
     Folder: TV.Show.2022.SEASON.01.S01.COMPLETE.720p.+HEVC-PSA
