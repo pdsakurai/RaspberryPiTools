@@ -108,32 +108,35 @@ function rename() {
     return 0
 }
 
-move(){
-    local -r sourceFullPath=$1
-    local -r destinationDirectory=$2
+function move() {
+    local -r source="${1:?Missing: Source}"
+    local -r destination="${2:?Missing: Destination}"
 
-    $cmd_create_directory --parents "$destinationDirectory"
+    $cmd_create_directory --parents "$destination"
 
-    what=""
-    if [[ -d "$sourceFullPath" ]]; then
-        local -r folderName="${sourceFullPath##*/}"
-        local -r completeDestinationDirectory="$destinationDirectory/$folderName"
-        $cmd_create_directory --parents "$completeDestinationDirectory"
-        for fileName in $( ls "$sourceFullPath" ); do
-            $cmd_move --force --strip-trailing-slashes "$sourceFullPath/$fileName" "$completeDestinationDirectory"
+    local what=""
+    if [[ -d "$source" ]]; then
+        local -r folder_name="${source##*/}"
+        local -r complete_destination="$destination/$folder_name"
+        $cmd_create_directory --parents "$complete_destination"
+        local file_name
+        for file_name in $( ls "$source" ); do
+            $cmd_move --force --strip-trailing-slashes "$source/$file_name" "$complete_destination"
         done
-        $cmd_delete --recursive --force "$sourceFullPath"
+        $cmd_delete --recursive --force "$source"
         what="folder"
-    elif [[ -f "$sourceFullPath" ]]; then
-        $cmd_move --force --strip-trailing-slashes "$sourceFullPath" "$destinationDirectory"
+    elif [[ -f "$source" ]]; then
+        $cmd_move --force --strip-trailing-slashes "$source" "$destination"
         what="file"
     fi
 
-    if [[ -e "$sourceFullPath" ]] || [[ -d "$sourceFullPath" ]]; then
-        log "Cannot move $what: \"$sourceFullPath\" to \"$destinationDirectory\""
-    else
-        log "Moved $what: \"$sourceFullPath\" to \"$destinationDirectory\""
+    if [[ -e "$source" ]]; then
+        log "Cannot move $what: \"$source\" to \"$destination\""
+        return 1
     fi
+
+    log "Moved $what: \"$source\" to \"$destination\""
+    return 0
 }
 
 function delete() {
