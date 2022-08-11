@@ -104,8 +104,8 @@ function move() {
         what="file"
     fi
 
-    if [[ -e "$source" ]]; then
-        log "Cannot move $what: \"$source\" to \"$destination\""
+    if [[ -z "$what" ]]; then
+        log "Cannot move: \"$source\" to \"$destination\""
         return 1
     fi
 
