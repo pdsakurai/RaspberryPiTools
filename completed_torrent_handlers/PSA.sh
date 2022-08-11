@@ -44,15 +44,11 @@ function process_movie() {
     local -r torrent_path=${1%/}
 
     local -r folder_name_original=${torrent_path##*/}
+    local -r folder_name_cleaned="$( clean_text_using_sed "$folder_name_original" ( "s/(\?\([0-9]\{4\}\))\?\(.*$\)/\(\1)/" ) )"
     local -r base_directory=${torrent_path%/$folder_name_original}
 
-    local -r folder_name_cleaned=$( \
-        echo ${folder_name_original//./ } \
-        | sed "s/.\(108\|72\)0p.*$//" \
-        | sed "s/(\?\([0-9]\{4\}\))\?\(.*$\)/\(\1)/" )
-
     for entry_name in $( ls "$torrent_path" ); do
-        if [[ ${entry_name%.*} == $folder_name_original ]]; then
+        if [[ -f "$torrent_path/$entry_name" ]] && [[ ${entry_name%.*} == $folder_name_original ]]; then
             local -r file_extension=${entry_name##*.}
             local -r file_name_cleaned="$folder_name_cleaned.$file_extension"
             rename "$torrent_path/$entry_name" "$torrent_path/$file_name_cleaned"
