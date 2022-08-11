@@ -31,6 +31,7 @@ function process_movie() {
 
     local -r folder_name_original="${torrent_path##*/}"
     local -r folder_name_cleaned="$( clean_text_using_sed "$folder_name_original" ( "s/(\?\([0-9]\{4\}\))\?\(.*$\)/\(\1)/" ) )"
+    local entry_name
     for entry_name in $( ls "$torrent_path" ); do
         local -r entry_full_file_path="$torrent_path/$entry_name"
         if [[ -f "$torrent_path/$entry_name" ]] && [[ "${entry_name%.*}" == "$folder_name_original" ]]; then
