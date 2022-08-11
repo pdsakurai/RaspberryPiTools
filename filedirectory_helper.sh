@@ -77,7 +77,7 @@ function rename() {
     fi
 
     $cmd_rename "${full_path%/}" "$new_full_file_path"
-    log "Renamed $what: \"$full_path\" to \"$new_name\""
+    log "Renamed $what: \"$full_path\" to \"$new_name$file_extension\""
     printf "$new_full_file_path"
     return 0
 }
