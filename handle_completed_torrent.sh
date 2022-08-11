@@ -2,13 +2,13 @@
 
 #Provided by Transmission
 if [[ -n "$TR_TORRENT_DIR"  ]] && [[ -n "$TR_TORRENT_NAME" ]]; then
-    readonly torrent_path="$TR_TORRENT_DIR/$TR_TORRENT_NAME"
+    readonly TORRENT_PATH="$TR_TORRENT_DIR/$TR_TORRENT_NAME"
 #Provided by aria2c
 elif [[ -n "$1" ]] && [[ -n "$2" ]] && [[ -n "$3" ]]; then
-    readonly torrent_path="$3"
+    readonly TORRENT_PATH="$3"
 elif [[ -e "$1" ]] && [[ -z "$2" ]]; then
     readonly is_debug_mode="true"
-    readonly torrent_path="$1"
+    readonly TORRENT_PATH="$1"
 else
     echo "No valid arguments found."
     exit 1
@@ -22,17 +22,17 @@ readonly dir_tvshow="$dir_root/TV show"
 readonly log_file="/mnt/eHDD/Torrent/log.txt"
 
 . ./completed_torrent_handlers/PSA.sh
-if is_from_PSA "$torrent_path"; then
-    if is_a_tvshow "$torrent_path"; then
-        process_tvshow "$torrent_path" "$dir_tvshow"
+if is_from_PSA "$TORRENT_PATH"; then
+    if is_a_tvshow "$TORRENT_PATH"; then
+        process_tvshow "$TORRENT_PATH" "$dir_tvshow"
         exit 0
-    elif [[ -d "$torrent_path" ]]; then
-        process_movie "$torrent_path" "$dir_movie"
+    elif [[ -d "$TORRENT_PATH" ]]; then
+        process_movie "$TORRENT_PATH" "$dir_movie"
         exit 0
     fi
 fi
 
-#mv "$torrent_path" "${torrent_path%/*}/[Judas] ${torrent_path##*/}"
+#mv "$TORRENT_PATH" "${TORRENT_PATH%/*}/[Judas] ${TORRENT_PATH##*/}"
 #find "/mnt/eHDD/Torrent/" -maxdepth 1 -type f -execdir bash /mnt/eHDD/Scripts/processCompletedTorrents.sh '{}' \;
 
 # Scrapers' rules for TV shows
