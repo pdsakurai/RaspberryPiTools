@@ -155,35 +155,6 @@ renameDownloadedAnimeFromJudas(){
     echo $(renameDownloadedFile "$originalTorrentPath" optionsForSedChainedCommand[@])
 }
 
-renameDownloadedMovieFromPSA(){
-    local -r originalTorrentPath=${1%/}
-
-    local -r originalFolderName=${originalTorrentPath##*/}
-    local -r baseDirectory=${originalTorrentPath%/$originalFolderName}
-    local -r cleanedFolderName=$( \
-        echo ${originalFolderName//./ } \
-        | sed "s/.\(108\|72\)0p.*$//" \
-        | sed "s/(\?\([0-9]\{4\}\))\?\(.*$\)/\(\1)/" )
-
-    for fileNameWithExtension in $( ls "$originalTorrentPath" ); do
-        if [[ -f "$originalTorrentPath/$fileNameWithExtension" ]]; then
-            if [[ ${fileNameWithExtension%.*} = $originalFolderName ]]; then
-                local fileExtension=${fileNameWithExtension##*.}
-                local newFileName="$cleanedFolderName.$fileExtension"
-                $renameCommand "$originalTorrentPath/$fileNameWithExtension" "$originalTorrentPath/$newFileName"
-                log "Renamed file: \"$originalTorrentPath/$fileNameWithExtension\" to \"$newFileName\""
-            else
-                delete "$originalTorrentPath/$fileNameWithExtension"
-            fi
-        fi
-    done
-
-    $renameCommand "$baseDirectory/$originalFolderName" "$baseDirectory/$cleanedFolderName"
-    log "Renamed folder: \"$baseDirectory/$originalFolderName\" to \"$cleanedFolderName\""
-
-    echo "$baseDirectory/$cleanedFolderName"
-}
-
 renameDownloadedTvShowFromPSA(){
     local -r originalTorrentPath=$1
 
@@ -207,21 +178,6 @@ processDownloadedAnimeFromJudas(){
         | sed "s/ S[0-9]\+E[0-9]\+.*$//" )
 
     move "$renamedFullFilePath" "$destinationDirectory/$animeTitle"
-}
-
-processDownloaded3DMovieFromPSA(){
-    local -r originalTorrentPath=$1
-
-    local -r renamedFullFolderPath=$( renameDownloadedMovieFromPSA "$originalTorrentPath" )
-
-    local -r renamedFolderName=${renamedFullFolderPath##*/}
-    for fileNameWithExtension in $( ls "$renamedFullFolderPath" ); do
-        if [[ -f "$renamedFullFolderPath/$fileNameWithExtension" ]] && [[ ${fileNameWithExtension%.*} = $renamedFolderName ]]; then
-            move "$renamedFullFolderPath/$fileNameWithExtension" "$directoryMovie3D"
-        fi
-    done
-
-    delete "$renamedFullFolderPath"
 }
 
 processDownloadedTvShowFromPSA(){
@@ -249,15 +205,10 @@ isFileNameTaggedWithSeasonAndEpisode() {
 
 
 if [[ ${torrentPath##*/} == *$keywordInTorrentNameForPsa* ]]; then
+    . ./completed_torrent_handlers/PSA.sh
 
     if [[ -d "$torrentPath" ]]; then
-        readonly regexFor3DMovies=\\b3D\\b.+SBS\\b
-        if [[ ${torrentPath##*/} =~ $regexFor3DMovies ]]; then
-            processDownloaded3DMovieFromPSA "$torrentPath"
-        else
-            . ./completed_torrent_handlers/PSA.sh
-            process_movie "$torrentPath"
-        fi
+        process_movie "$torrentPath"
     fi
 
     if [[ -f "$torrentPath" ]] && isFileNameTaggedWithSeasonAndEpisode "${torrentPath##*/}"; then
