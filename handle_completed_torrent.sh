@@ -155,16 +155,6 @@ renameDownloadedAnimeFromJudas(){
     echo $(renameDownloadedFile "$originalTorrentPath" optionsForSedChainedCommand[@])
 }
 
-renameDownloadedTvShowFromPSA(){
-    local -r originalTorrentPath=$1
-
-    local -r optionsForSedChainedCommand=( \
-        "s/\./ /g" \
-        "s/\(S[0-9]\+E[0-9]\+\).*$/\1/" )
-
-    echo $(renameDownloadedFile "$originalTorrentPath" optionsForSedChainedCommand[@])
-}
-
 processDownloadedAnimeFromJudas(){
     local -r originalTorrentPath=$1
     local -r destinationDirectory=$2
@@ -178,17 +168,6 @@ processDownloadedAnimeFromJudas(){
         | sed "s/ S[0-9]\+E[0-9]\+.*$//" )
 
     move "$renamedFullFilePath" "$destinationDirectory/$animeTitle"
-}
-
-processDownloadedTvShowFromPSA(){
-    local -r originalTorrentPath=$1
-
-    local -r renamedFullFilePath=$( renameDownloadedTvShowFromPSA "$originalTorrentPath" )
-    local -r tvShowTitle=$( \
-       echo ${renamedFullFilePath##*/} \
-       | sed "s/ S[0-9]\+E[0-9]\+.*$//" )
-
-    move "$renamedFullFilePath" "$directoryTvShow/$tvShowTitle"
 }
 
 isFileNameTaggedWithSeasonAndEpisode() {
@@ -212,9 +191,8 @@ if [[ ${torrentPath##*/} == *$keywordInTorrentNameForPsa* ]]; then
     fi
 
     if [[ -f "$torrentPath" ]] && isFileNameTaggedWithSeasonAndEpisode "${torrentPath##*/}"; then
-        processDownloadedTvShowFromPSA "$torrentPath"
+        process_tvshow "$torrentPath"
     fi
-
 fi
 
 if [[ ${torrentPath##*/} == *$keywordInTorrentNameForJudas* ]] \
