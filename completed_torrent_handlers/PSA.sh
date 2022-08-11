@@ -1,5 +1,9 @@
 #!/bin/bash
 
+[ -n "$_PSA_sh" ] \
+    && return \
+    || readonly _PSA_sh="_PSA_sh[$$]"
+
 function clean_text_using_sed() {
     local text="${1:?Missing: text to clean}"
     local -r custom_sed_options_sequence=( "${!2}" )
