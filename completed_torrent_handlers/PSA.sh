@@ -1,9 +1,11 @@
 #!/bin/bash
 
 function process_movie() {
-    #Expected structure:
-    # Movie (2022) HEVC-PSA
-    #    /Movie (2022) HEVC-PSA.mkv
+    '''Expected structure:
+    Folder: Movie.2022.EXTENDED.1080p.*HEVC-PSA
+    Inside it:
+        Movie.2022.EXTENDED.1080p.*HEVC-PSA.mkv
+        .*other irrelevant files.*'''
     local -r torrent_path=${1%/}
 
     local -r folder_name_original=${torrent_path##*/}
