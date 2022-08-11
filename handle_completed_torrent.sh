@@ -1,16 +1,12 @@
 #!/bin/bash
 
-#Provided by Transmission
-readonly torrent_dir="$TR_TORRENT_DIR"
-readonly torrent_name="$TR_TORRENT_NAME"
-
 set -euo pipefail
 IFS=$'\n\t'
 
-#Constants
-if [[ -n $torrent_dir  ]] && [[ -n $torrent_name ]]; then
-    readonly torrent_path="$torrent_dir/$torrent_name"
-else
+#Provided by Transmission
+if [[ -n "$TR_TORRENT_DIR"  ]] && [[ -n "$TR_TORRENT_NAME" ]]; then
+    readonly torrent_path="$TR_TORRENT_DIR/$TR_TORRENT_NAME"
+else 
     readonly torrent_path=${1:?Torrent path is not known.}
 fi
 
