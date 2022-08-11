@@ -8,9 +8,6 @@ set -euo pipefail
 IFS=$'\n\t'
 
 #Constants
-readonly keywordInTorrentNameForJudas="Judas"
-readonly keywordInTorrentNameForYakuboEncodes="YakuboEncodes"
-readonly keywordInTorrentNameForHorribleSubs="HorribleSubs"
 if [[ -n $torrent_dir  ]] && [[ -n $torrent_name ]]; then
     readonly torrent_path="$torrent_dir/$torrent_name"
 else

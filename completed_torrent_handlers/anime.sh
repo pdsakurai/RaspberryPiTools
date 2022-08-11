@@ -64,6 +64,9 @@ isFileNameTaggedWithSeasonAndEpisode() {
     return 1
 }
 
+readonly keywordInTorrentNameForJudas="Judas"
+readonly keywordInTorrentNameForYakuboEncodes="YakuboEncodes"
+readonly keywordInTorrentNameForHorribleSubs="HorribleSubs"
 if [[ ${torrent_path##*/} == *$keywordInTorrentNameForJudas* ]] \
    || [[ ${torrent_path##*/} == *$keywordInTorrentNameForYakuboEncodes* ]] \
    || [[ ${torrent_path##*/} == *$keywordInTorrentNameForHorribleSubs* ]]; then
