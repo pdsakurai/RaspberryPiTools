@@ -52,7 +52,7 @@ function process_movie() {
         | sed "s/(\?\([0-9]\{4\}\))\?\(.*$\)/\(\1)/" )
 
     for entry_name in $( ls "$torrent_path" ); do
-        if [ ${entry_name%.*} == $folder_name_original ]; then
+        if [[ ${entry_name%.*} == $folder_name_original ]]; then
             local -r file_extension=${entry_name##*.}
             local -r file_name_cleaned="$folder_name_cleaned.$file_extension"
             rename "$torrent_path/$entry_name" "$torrent_path/$file_name_cleaned"

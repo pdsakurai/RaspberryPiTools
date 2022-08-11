@@ -46,7 +46,7 @@ fi
 ############
 
 function log() {
-    local text="$( [ "$debugMode" == "true" ] && printf "!DEBUG MODE! " )${@:?Cannot do empty logging}"
+    local text="$( [[ "$debugMode" == "true" ]] && printf "!DEBUG MODE! " )${@:?Cannot do empty logging}"
     local -r tag="$FILE_NAME[$$]"
     local -r time_now="$( date "+%Y-%m-%dT%H:%M:%S" )"
     logger -t "$tag" "$text"
@@ -59,7 +59,7 @@ function rename() {
     local -r old="${1:?Missing: Old name}"
     local -r new="${1:?Missing: New name}"
 
-    [ -f "$old" ] \
+    [[ -f "$old" ]] \
         && local -r type="file" \
         || local -r type="folder"
     
@@ -99,15 +99,15 @@ function delete() {
     local -r entry=${1:?Missing: Entry to delete}
 
     local type=""
-    if [ -f "$entry" ]; then
+    if [[ -f "$entry" ]]; then
         $deleteCommand "$entry"
         type="file"
-    elif [ -d "$entry" ]; then
+    elif [[ -d "$entry" ]]; then
         $deleteCommand --recursive --force "$entry"
         type="folder"
     fi
 
-    if [ -e "$entry" ]; then
+    if [[ -e "$entry" ]]; then
         log "Cannot delete $type: \"$entry\""
         return 1
     else
