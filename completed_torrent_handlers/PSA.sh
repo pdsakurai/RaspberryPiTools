@@ -67,12 +67,33 @@ function process_movie() {
 }
 
 function process_tvshow(){
-    '''Expected structure:
-    TV.Show.2022.S01E01.Title.of.episode.*HEVC-PSA.mkv'''
     local -r torrent_path=${1%/}
 
-    local -r full_file_path="$( rename_file "$torrent_path" )"
-    local -r tv_show_title="$( printf "${full_file_path##*/}" | sed "s/.S[0-9]\+E[0-9]\+.*//" )"
+    '''Expected structure #1:
+    TV.Show.2022.S01E01.Title.of.episode.720p.+*HEVC-PSA.mkv'''
+    if [[ -f "$torrent_path" ]]; then
+        local -r full_file_path="$( rename_file "$torrent_path" )"
+        local -r tv_show_title="$( printf "${full_file_path##*/}" | sed "s/.S[0-9]\+E[0-9]\+.*//" )"
+        move "$full_file_path" "$directoryTvShow/$tv_show_title"
+    fi
 
-    move "$full_file_path" "$directoryTvShow/$tv_show_title"
+    '''Expected structure #2:
+    Folder: TV.Show.2022.SEASON.01.S01.COMPLETE.720p.+HEVC-PSA
+    Inside it:
+        TV.Show.2022.S01E01.Title.of.episode.720p.+*HEVC-PSA.mkv
+        TV.Show.2022.S01E02.Title.of.episode.720p.+*HEVC-PSA.mkv'''
+    if [[ -d "$torrent_path" ]]; then
+        local -r tv_show_title="$( printf "${torrent_path##*/}" | sed "s/\.SEASON\..\+//" )"
+
+        local file_name
+        local has_processed_tvshow
+        for file_name in "$( ls "$torrent_path" )"; do
+            if [[ "$file_name" =~ "$tv_show_title" ]]; then 
+                process_tvshow "$torrent_path/$file_name"
+                has_processed_tvshow="true"
+            fi
+        done
+
+        [[ -n "$has_processed_tvshow" ]] && delete "$torrent_path"
+    fi
 }
