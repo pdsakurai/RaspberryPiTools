@@ -55,16 +55,58 @@ function log() {
     sed -i "1 s|^|<$time_now> $tag: $text\n|" "$logFile"
 }
 
-function rename() {
-    local -r old="${1:?Missing: Old name}"
-    local -r new="${1:?Missing: New name}"
+function get_base_directory() {
+    local full_path="${1:?Missing: Full file/folder path}"
+    full_path="${full_path%/}"
 
-    [[ -f "$old" ]] \
-        && local -r type="file" \
-        || local -r type="folder"
-    
-    $renameCommand "$old" "$new"
-    log "Renamed $type: \"$old\" to \"$new\""
+    local slashes="${full_path#/}"
+    slashes="${slashes//[^\/]/}"
+
+    [[ "${#slashes}" -gt 0 ]] \
+        && printf "${full_path%/*}/" \
+        || printf ""
+}
+
+function get_file_extension() {
+    local -r full_path="${1:?Missing: Full file/folder path}"
+    local -r file_extension="${full_path##*.}"
+
+    [[ -f "${full_path%/}" && "${#file_extension}" -gt 0 ]] \
+        && printf ".$file_extension" \
+        || printf ""
+}
+
+function rename() {
+    local full_path="${1:?Missing: Full file/folder path}"
+    local -r new_name="${2:?Missing: New name}"
+
+    if [[ ! -e "$full_path" ]]; then
+        log "Cannot rename non-existing item: \"$full_path\""
+        return 1
+    fi
+
+    if [[ "${new_name//\//}" != "$new_name" ]]; then
+        log "Cannot rename \"$full_path\" to an invalid name: \"$new_name\""
+        return 1
+    fi
+
+    [[ -f "${full_path%/}" ]] \
+        && local -r what="file" \
+        || local -r what="folder"
+
+    local -r base_directory"=$( get_base_directory "$full_path" )"
+    local -r file_extension=[[ -z "$( get_file_extension "$new_name" )" ]] && "$( get_file_extension "$full_path" )"
+    local -r new_full_file_path="$base_directory$new_name$file_extension"
+
+    if [[ -e "$new_full_file_path" ]]; then
+        log "Cannot rename \"$full_path\" to an existing $what: \"$new_name\""
+        return 1
+    fi
+
+    $renameCommand "${full_path%/}" "$new_full_file_path"
+    log "Renamed $what: \"$full_path\" to \"$new_name\""
+    printf "$new_full_file_path"
+    return 0
 }
 
 move(){

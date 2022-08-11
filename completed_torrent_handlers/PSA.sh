@@ -1,19 +1,5 @@
 #!/bin/bash
 
-function rename_file() {
-    local -r full_file_path="${1:?Missing: Full file path}"
-    local -r custom_sed_options_sequence=( "${!2}" )
-
-    local -r file_name="${full_file_path##*/}"
-    local -r file_extension="${file_name##*.}"
-    local -r file_name_cleaned="$( clean_text_using_sed "${file_name%.$file_extension}" "${custom_sed_options_sequence[@]}" ).$file_extension"
-
-    local -r base_directory="${full_file_path%/*}"
-    rename "$base_directory/$file_name" "$base_directory/$file_name_cleaned"
-
-    printf "$base_directory/$file_name_cleaned"
-}
-
 function clean_text_using_sed() {
     local text="${1:?Missing: text to clean}"
     local -r custom_sed_options_sequence=( "${!2}" )
@@ -49,17 +35,14 @@ function process_movie() {
 
     for entry_name in $( ls "$torrent_path" ); do
         if [[ -f "$torrent_path/$entry_name" ]] && [[ ${entry_name%.*} == $folder_name_original ]]; then
-            local -r file_extension="${entry_name##*.}"
-            local -r file_name_cleaned="$folder_name_cleaned.$file_extension"
-            rename "$torrent_path/$entry_name" "$torrent_path/$file_name_cleaned"
+            rename "$torrent_path/$entry_name" "$folder_name_cleaned"
         else
             delete "$torrent_path/$entry_name"
         fi
     done
 
-    local -r torrent_path_cleaned="$base_directory/$folder_name_cleaned"
-    rename "$base_directory/$folder_name_original" "$torrent_path_cleaned"
-    move "$torrent_path_cleaned" "$directoryMovie"
+    local -r cleaned_torrent_path="$( rename "$base_directory/$folder_name_original" "$folder_name_cleaned" )"
+    move "$cleaned_torrent_path" "$directoryMovie"
 }
 
 function process_tvshow(){
@@ -68,7 +51,8 @@ function process_tvshow(){
     '''Expected structure #1:
     TV.Show.2022.S01E01.Title.of.episode.720p.+*HEVC-PSA.mkv'''
     if [[ -f "$torrent_path" ]]; then
-        local -r full_file_path_postrenaming="$( rename_file "$torrent_path" )"
+        local -r file_name_cleaned="$( clean_text_using_sed "${torrent_path##*/}" )"
+        local -r full_file_path_postrenaming="$( rename "$torrent_path" "$file_name_cleaned" )"
         local -r tv_show_title="$( printf "${full_file_path_postrenaming##*/}" | sed "s/.S[0-9]\+E[0-9]\+.*//" )"
         move "$full_file_path_postrenaming" "$directoryTvShow/$tv_show_title"
 
