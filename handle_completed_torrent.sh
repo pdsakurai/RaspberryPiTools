@@ -209,14 +209,6 @@ processDownloadedAnimeFromJudas(){
     move "$renamedFullFilePath" "$destinationDirectory/$animeTitle"
 }
 
-processDownloadedMovieFromPSA(){
-    local -r originalTorrentPath=$1
-
-    local -r renamedFullFolderPath=$( renameDownloadedMovieFromPSA "$originalTorrentPath" )
-
-    move "$renamedFullFolderPath" "$directoryMovie"
-}
-
 processDownloaded3DMovieFromPSA(){
     local -r originalTorrentPath=$1
 
