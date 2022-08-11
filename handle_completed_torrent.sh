@@ -6,8 +6,14 @@ IFS=$'\n\t'
 #Provided by Transmission
 if [[ -n "$TR_TORRENT_DIR"  ]] && [[ -n "$TR_TORRENT_NAME" ]]; then
     readonly torrent_path="$TR_TORRENT_DIR/$TR_TORRENT_NAME"
-else 
-    readonly torrent_path=${1:?Torrent path is not known.}
+#Provided by aria2c
+elif [[ -n "$1" ]] && [[ -n "$2" ]] && [[ -n "$3" ]]; then
+    readonly torrent_path="$3"
+elif [[ -e "$1" ]]; then
+    readonly torrent_path="$1"
+else
+    echo "No arguments found."
+    exit 1
 fi
 
 #Environment
