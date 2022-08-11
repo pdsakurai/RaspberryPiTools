@@ -71,7 +71,7 @@ function process_tvshow(){
         local file_name
         local has_processed_tvshow
         for file_name in "$( ls "$torrent_path" )"; do
-            if [[ -f "$torrent_path/$file_name" ]] && [[ "$file_name" =~ "$tv_show_title" ]]; then 
+            if [[ -f "$torrent_path/$file_name" ]] && [[ "$file_name" =~ ^$tv_show_title ]]; then 
                 process_tvshow "$torrent_path/$file_name"
                 has_processed_tvshow="true"
             fi
