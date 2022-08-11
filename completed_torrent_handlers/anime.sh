@@ -64,15 +64,15 @@ isFileNameTaggedWithSeasonAndEpisode() {
     return 1
 }
 
-if [[ ${torrentPath##*/} == *$keywordInTorrentNameForJudas* ]] \
-   || [[ ${torrentPath##*/} == *$keywordInTorrentNameForYakuboEncodes* ]] \
-   || [[ ${torrentPath##*/} == *$keywordInTorrentNameForHorribleSubs* ]]; then
+if [[ ${torrent_path##*/} == *$keywordInTorrentNameForJudas* ]] \
+   || [[ ${torrent_path##*/} == *$keywordInTorrentNameForYakuboEncodes* ]] \
+   || [[ ${torrent_path##*/} == *$keywordInTorrentNameForHorribleSubs* ]]; then
 
-    if [[ -f "$torrentPath" ]]; then
-        if [[ ${torrentPath##*/} =~ \ -\ [0-9]+ ]] || isFileNameTaggedWithSeasonAndEpisode "${torrentPath##*/}"; then
-            processDownloadedAnimeFromJudas "$torrentPath" "$dir_anime"
+    if [[ -f "$torrent_path" ]]; then
+        if [[ ${torrent_path##*/} =~ \ -\ [0-9]+ ]] || isFileNameTaggedWithSeasonAndEpisode "${torrent_path##*/}"; then
+            processDownloadedAnimeFromJudas "$torrent_path" "$dir_anime"
         else
-            processDownloadedAnimeFromJudas "$torrentPath" "$dir_movie"
+            processDownloadedAnimeFromJudas "$torrent_path" "$dir_movie"
         fi
     fi
 

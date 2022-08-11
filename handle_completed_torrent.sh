@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #Provided by Transmission
-readonly torrentDir="$TR_TORRENT_DIR"
-readonly torrentName="$TR_TORRENT_NAME"
+readonly torrent_dir="$TR_TORRENT_DIR"
+readonly torrent_name="$TR_TORRENT_NAME"
 
 set -euo pipefail
 IFS=$'\n\t'
@@ -11,10 +11,10 @@ IFS=$'\n\t'
 readonly keywordInTorrentNameForJudas="Judas"
 readonly keywordInTorrentNameForYakuboEncodes="YakuboEncodes"
 readonly keywordInTorrentNameForHorribleSubs="HorribleSubs"
-if [[ -n $torrentDir  ]] && [[ -n $torrentName ]]; then
-    readonly torrentPath="$torrentDir/$torrentName"
+if [[ -n $torrent_dir  ]] && [[ -n $torrent_name ]]; then
+    readonly torrent_path="$torrent_dir/$torrent_name"
 else
-    readonly torrentPath=${1:?Torrent path is not known.}
+    readonly torrent_path=${1:?Torrent path is not known.}
 fi
 
 #Environment
@@ -25,17 +25,17 @@ readonly dir_tvshow="$dir_root/TV show"
 readonly log_file="/mnt/eHDD/Torrent/log.txt"
 
 . ./completed_torrent_handlers/PSA.sh
-if is_from_PSA "$torrentPath"; then
-    if is_a_tvshow "$torrentPath"; then
-        process_tvshow "$torrentPath" "$dir_tvshow"
+if is_from_PSA "$torrent_path"; then
+    if is_a_tvshow "$torrent_path"; then
+        process_tvshow "$torrent_path" "$dir_tvshow"
         exit 0
-    elif [[ -d "$torrentPath" ]]; then
-        process_movie "$torrentPath" "$dir_movie"
+    elif [[ -d "$torrent_path" ]]; then
+        process_movie "$torrent_path" "$dir_movie"
         exit 0
     fi
 fi
 
-#mv "$torrentPath" "${torrentPath%/*}/[Judas] ${torrentPath##*/}"
+#mv "$torrent_path" "${torrent_path%/*}/[Judas] ${torrent_path##*/}"
 #find "/mnt/eHDD/Torrent/" -maxdepth 1 -type f -execdir bash /mnt/eHDD/Scripts/processCompletedTorrents.sh '{}' \;
 
 # Scrapers' rules for TV shows
