@@ -4,8 +4,6 @@
     && return \
     || readonly _PSA_sh="$FILE_NAME[$$]"
 
-. ../filedirectory_helper.sh
-
 function is_from_PSA() {
     local -r torrent_path="${1:?Missing: Torrent path}"
 

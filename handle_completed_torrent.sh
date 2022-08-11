@@ -21,6 +21,7 @@ readonly dir_movie="$dir_root/Movie"
 readonly dir_tvshow="$dir_root/TV show"
 readonly log_file="/mnt/eHDD/Torrent/log.txt"
 
+. ./filedirectory_helper.sh
 . ./completed_torrent_handlers/PSA.sh
 if is_from_PSA "$TORRENT_PATH"; then
     if is_a_tvshow "$TORRENT_PATH"; then
