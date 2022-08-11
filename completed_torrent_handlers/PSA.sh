@@ -2,7 +2,7 @@
 
 [ -n "$_PSA_sh" ] \
     && return \
-    || readonly _PSA_sh="_PSA_sh[$$]"
+    || readonly _PSA_sh="$FILE_NAME[$$]"
 
 . ../filedirectory_helper.sh
 
