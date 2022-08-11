@@ -68,7 +68,7 @@ function rename() {
         || local -r what="folder"
 
     local -r base_directory"=$( get_base_directory "$full_path" )"
-    local -r file_extension=[[ -z "$( get_file_extension "$new_name" )" ]] && "$( get_file_extension "$full_path" )"
+    local -r file_extension="$( [[ -z "$( get_file_extension "$new_name" )" ]] && get_file_extension "$full_path" )"
     local -r new_full_file_path="$base_directory$new_name$file_extension"
 
     if [[ -e "$new_full_file_path" ]]; then
