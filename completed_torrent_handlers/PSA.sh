@@ -47,6 +47,7 @@ function process_movie() {
         Movie.2022.EXTENDED.1080p.*HEVC-PSA.mkv
         .*other irrelevant files.*'''
     local -r torrent_path="${1%/}"
+    local -r destination="${2:?Missing: Destination}"
 
     local -r folder_name_original="${torrent_path##*/}"
     local -r folder_name_cleaned="$( clean_text_using_sed "$folder_name_original" ( "s/(\?\([0-9]\{4\}\))\?\(.*$\)/\(\1)/" ) )"
@@ -61,11 +62,12 @@ function process_movie() {
     done
 
     local -r cleaned_torrent_path="$( rename "$torrent_path" "$folder_name_cleaned" )"
-    move "$cleaned_torrent_path" "$directoryMovie"
+    move "$cleaned_torrent_path" "$destination"
 }
 
 function process_tvshow(){
     local -r torrent_path="${1%/}"
+    local -r destination="${2:?Missing: Destination}"
 
     '''Expected structure #1:
     TV.Show.2022.S01E01.Title.of.episode.720p.+*HEVC-PSA.mkv'''
@@ -73,7 +75,7 @@ function process_tvshow(){
         local -r file_name_cleaned="$( clean_text_using_sed "${torrent_path##*/}" )"
         local -r cleaned_torrent_path="$( rename "$torrent_path" "$file_name_cleaned" )"
         local -r tv_show_title="$( printf "${cleaned_torrent_path##*/}" | sed "s/.S[0-9]\+E[0-9]\+.*//" )"
-        move "$cleaned_torrent_path" "$directoryTvShow/$tv_show_title"
+        move "$cleaned_torrent_path" "$destination/$tv_show_title"
 
     '''Expected structure #2:
     Folder: TV.Show.2022.SEASON.01.S01.COMPLETE.720p.+HEVC-PSA
@@ -87,7 +89,7 @@ function process_tvshow(){
         local has_processed_tvshow
         for file_name in "$( ls "$torrent_path" )"; do
             if [[ -f "$torrent_path/$file_name" ]] && [[ "$file_name" =~ ^$tv_show_title ]]; then 
-                process_tvshow "$torrent_path/$file_name"
+                process_tvshow "$torrent_path/$file_name" "$destination"
                 has_processed_tvshow="true"
             fi
         done

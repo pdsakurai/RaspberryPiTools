@@ -230,10 +230,10 @@ isFileNameTaggedWithSeasonAndEpisode() {
 
 if is_from_PSA "$torrentPath"; then
     if is_a_tvshow "$torrentPath"; then
-        process_tvshow "$torrentPath"
+        process_tvshow "$torrentPath" "$dir_tvshow"
         exit 0
     elif [[ -d "$torrentPath" ]]; then
-        process_movie "$torrentPath"
+        process_movie "$torrentPath" "$dir_movie"
         exit 0
     fi
 fi
