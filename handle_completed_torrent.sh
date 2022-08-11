@@ -1,8 +1,5 @@
 #!/bin/bash
 
-set -euo pipefail
-IFS=$'\n\t'
-
 #Provided by Transmission
 if [[ -n "$TR_TORRENT_DIR"  ]] && [[ -n "$TR_TORRENT_NAME" ]]; then
     readonly torrent_path="$TR_TORRENT_DIR/$TR_TORRENT_NAME"
