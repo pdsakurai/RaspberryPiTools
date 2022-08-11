@@ -4,11 +4,11 @@ function rename_file() {
     local -r full_file_path="${1:?Missing: Full file path}"
     local -r custom_sed_options_sequence=( "${!2}" )
 
-    local -r file_name=${full_file_path##*/}
-    local -r file_extension=${file_name##*.}
+    local -r file_name="${full_file_path##*/}"
+    local -r file_extension="${file_name##*.}"
     local -r file_name_cleaned="$( clean_text_using_sed "${file_name%.$file_extension}" "${custom_sed_options_sequence[@]}" ).$file_extension"
 
-    local -r base_directory=${full_file_path%/*}
+    local -r base_directory="${full_file_path%/*}"
     rename "$base_directory/$file_name" "$base_directory/$file_name_cleaned"
 
     printf "$base_directory/$file_name_cleaned"
@@ -41,15 +41,15 @@ function process_movie() {
     Inside it:
         Movie.2022.EXTENDED.1080p.*HEVC-PSA.mkv
         .*other irrelevant files.*'''
-    local -r torrent_path=${1%/}
+    local -r torrent_path="${1%/}"
 
-    local -r folder_name_original=${torrent_path##*/}
+    local -r folder_name_original="${torrent_path##*/}"
     local -r folder_name_cleaned="$( clean_text_using_sed "$folder_name_original" ( "s/(\?\([0-9]\{4\}\))\?\(.*$\)/\(\1)/" ) )"
-    local -r base_directory=${torrent_path%/$folder_name_original}
+    local -r base_directory="${torrent_path%/$folder_name_original}"
 
     for entry_name in $( ls "$torrent_path" ); do
         if [[ -f "$torrent_path/$entry_name" ]] && [[ ${entry_name%.*} == $folder_name_original ]]; then
-            local -r file_extension=${entry_name##*.}
+            local -r file_extension="${entry_name##*.}"
             local -r file_name_cleaned="$folder_name_cleaned.$file_extension"
             rename "$torrent_path/$entry_name" "$torrent_path/$file_name_cleaned"
         else
@@ -63,7 +63,7 @@ function process_movie() {
 }
 
 function process_tvshow(){
-    local -r torrent_path=${1%/}
+    local -r torrent_path="${1%/}"
 
     '''Expected structure #1:
     TV.Show.2022.S01E01.Title.of.episode.720p.+*HEVC-PSA.mkv'''
