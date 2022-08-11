@@ -26,26 +26,26 @@ readonly directoryTvShow="$directoryRoot/TV show"
 readonly logFile="/mnt/eHDD/Torrent/log.txt"
 
 #Commands
-readonly debugMode=false
-if [[ $debugMode == true ]]; then
-    doNothing(){
+readonly is_debug_mode=true
+if [[ $is_debug_mode == true ]]; then
+    function noop() {
         local -r nothing=""
     }
-    readonly createDirectoryCommand=doNothing
-    readonly deleteCommand=doNothing
-    readonly renameCommand=doNothing
-    readonly moveCommand=doNothing
+    readonly cmd_create_directory=noop
+    readonly cmd_delete=noop
+    readonly cmd_rename=noop
+    readonly cmd_move=noop
 else
-    readonly createDirectoryCommand=mkdir
-    readonly deleteCommand=rm
-    readonly renameCommand=mv
-    readonly moveCommand=mv
+    readonly cmd_create_directory=mkdir
+    readonly cmd_delete=rm
+    readonly cmd_rename=mv
+    readonly cmd_move=mv
 fi
 
 ############
 
 function log() {
-    local text="$( [[ "$debugMode" == "true" ]] && printf "!DEBUG MODE! " )${@:?Cannot do empty logging}"
+    local text="$( [[ "$is_debug_mode" == "true" ]] && printf "!DEBUG MODE! " )${@:?Cannot do empty logging}"
     local -r tag="$FILE_NAME[$$]"
     local -r time_now="$( date "+%Y-%m-%dT%H:%M:%S" )"
     logger -t "$tag" "$text"
@@ -102,7 +102,7 @@ function rename() {
         return 1
     fi
 
-    $renameCommand "${full_path%/}" "$new_full_file_path"
+    $cmd_rename "${full_path%/}" "$new_full_file_path"
     log "Renamed $what: \"$full_path\" to \"$new_name\""
     printf "$new_full_file_path"
     return 0
@@ -112,20 +112,20 @@ move(){
     local -r sourceFullPath=$1
     local -r destinationDirectory=$2
 
-    $createDirectoryCommand --parents "$destinationDirectory"
+    $cmd_create_directory --parents "$destinationDirectory"
 
     what=""
     if [[ -d "$sourceFullPath" ]]; then
         local -r folderName="${sourceFullPath##*/}"
         local -r completeDestinationDirectory="$destinationDirectory/$folderName"
-        $createDirectoryCommand --parents "$completeDestinationDirectory"
+        $cmd_create_directory --parents "$completeDestinationDirectory"
         for fileName in $( ls "$sourceFullPath" ); do
-            $moveCommand --force --strip-trailing-slashes "$sourceFullPath/$fileName" "$completeDestinationDirectory"
+            $cmd_move --force --strip-trailing-slashes "$sourceFullPath/$fileName" "$completeDestinationDirectory"
         done
-        $deleteCommand --recursive --force "$sourceFullPath"
+        $cmd_delete --recursive --force "$sourceFullPath"
         what="folder"
     elif [[ -f "$sourceFullPath" ]]; then
-        $moveCommand --force --strip-trailing-slashes "$sourceFullPath" "$destinationDirectory"
+        $cmd_move --force --strip-trailing-slashes "$sourceFullPath" "$destinationDirectory"
         what="file"
     fi
 
@@ -141,10 +141,10 @@ function delete() {
 
     local type=""
     if [[ -f "$entry" ]]; then
-        $deleteCommand "$entry"
+        $cmd_delete "$entry"
         type="file"
     elif [[ -d "$entry" ]]; then
-        $deleteCommand --recursive --force "$entry"
+        $cmd_delete --recursive --force "$entry"
         type="folder"
     fi
 
@@ -178,7 +178,7 @@ renameDownloadedFile(){
 
     local -r baseDirectory=${originalTorrentPath%/*}
     local -r newFileName="$cleanedFileNameWithoutExtension.$fileExtension"
-    $renameCommand "$baseDirectory/$originalFileNameWithExtension" "$baseDirectory/$newFileName"
+    $cmd_rename "$baseDirectory/$originalFileNameWithExtension" "$baseDirectory/$newFileName"
     log "Renamed file: \"$baseDirectory/$originalFileNameWithExtension\" to \"$newFileName\""
 
     echo "$baseDirectory/$newFileName"
