@@ -4,6 +4,21 @@
     && return \
     || readonly _PSA_sh="_PSA_sh[$$]"
 
+function is_from_PSA() {
+    local -r torrent_path="${1:?Missing: Torrent path}"
+
+    [[ "${torrent_path##*/}" =~ .HEVC-PSA. ]] && return 0
+    return 1
+}
+
+function is_a_tvshow() {
+    local -r torrent_path="${1:?Missing: Torrent path}"
+    local -r item="${torrent_path##*/}"
+    [[ -f "$torrent_path" ]] && [[ "$item" =~ .S[[:digit:]]+E[[:digit:]]+. ]] && return 0
+    [[ -d "$torrent_path" ]] && [[ "$item" =~ .S[[:digit:]]+.COMPLETE. ]] && return 0
+    return 1
+}
+
 function clean_text_using_sed() {
     local text="${1:?Missing: text to clean}"
     local -r custom_sed_options_sequence=( "${!2}" )

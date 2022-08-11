@@ -11,7 +11,6 @@ IFS=$'\n\t'
 readonly keywordInTorrentNameForJudas="Judas"
 readonly keywordInTorrentNameForYakuboEncodes="YakuboEncodes"
 readonly keywordInTorrentNameForHorribleSubs="HorribleSubs"
-readonly keywordInTorrentNameForPsa="HEVC-PSA"
 if [[ -n $torrentDir  ]] && [[ -n $torrentName ]]; then
     readonly torrentPath="$torrentDir/$torrentName"
 else
@@ -225,15 +224,15 @@ isFileNameTaggedWithSeasonAndEpisode() {
 ############
 
 
-if [[ ${torrentPath##*/} == *$keywordInTorrentNameForPsa* ]]; then
     . ./completed_torrent_handlers/PSA.sh
 
-    if [[ -d "$torrentPath" ]]; then
-        process_movie "$torrentPath"
-    fi
-
-    if [[ -f "$torrentPath" ]] && isFileNameTaggedWithSeasonAndEpisode "${torrentPath##*/}"; then
+if is_from_PSA "$torrentPath"; then
+    if is_a_tvshow "$torrentPath"; then
         process_tvshow "$torrentPath"
+        exit 0
+    elif [[ -d "$torrentPath" ]]; then
+        process_movie "$torrentPath"
+        exit 0
     fi
 fi
 
