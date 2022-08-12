@@ -33,7 +33,7 @@ readonly dir_root="/mnt/eHDD/Videos"
 readonly dir_anime="$dir_root/Anime"
 readonly dir_movie="$dir_root/Movie"
 readonly dir_tvshow="$dir_root/TV show"
-readonly log_file="/mnt/eHDD/Torrent/log.txt"
+readonly log_file="/mnt/eHDD/Downloads/log.txt"
 
 . ./filedirectory_helper.sh
 . ./completed_torrent_handlers/PSA.sh
