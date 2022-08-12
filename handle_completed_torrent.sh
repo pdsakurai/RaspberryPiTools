@@ -17,7 +17,7 @@ function log() {
 if [[ "$#" -eq "0" && -n "$TR_TORRENT_DIR" && -n "$TR_TORRENT_NAME" ]]; then
     log "Triggered by Transmission. Arguments[$#]: $@"
     readonly TORRENT_PATH="$TR_TORRENT_DIR/$TR_TORRENT_NAME"
-elif [[ "$#" -eq "1" ]]; then
+elif [[ "$#" -eq "1" && -e "$1" ]]; then
     # readonly is_debug_mode="true"
     readonly TORRENT_PATH="$1"
 #Provided by aria2c
