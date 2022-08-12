@@ -1,7 +1,7 @@
 #!/bin/bash
 
 log() {
-    local tag="$FILE_NAME[$$]"
+    local tag="pihole_helper.sh[$$]"
     echo "$tag: ${@:?Cannot do empty logging}"
     logger -t "$tag" "$@"
 }
