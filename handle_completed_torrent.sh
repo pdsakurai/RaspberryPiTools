@@ -7,6 +7,7 @@ function log() {
     logger -t "$tag" "$text"
 
     text="<$time_now> $tag: $text\n"
+    local -r log_file="/mnt/eHDD/Downloads/log.txt"
     [[ -e "$log_file" ]] \
         && sed -i "1 s|^|$text|" "$log_file" \
         || printf "$text" > "$log_file"
@@ -33,7 +34,6 @@ readonly dir_root="/mnt/eHDD/Videos"
 readonly dir_anime="$dir_root/Anime"
 readonly dir_movie="$dir_root/Movie"
 readonly dir_tvshow="$dir_root/TV show"
-readonly log_file="/mnt/eHDD/Downloads/log.txt"
 
 readonly script_location="/home/pi"
 . $script_location/filedirectory_helper.sh
