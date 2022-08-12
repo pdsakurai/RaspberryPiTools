@@ -14,7 +14,8 @@ function log() {
 }
 
 #Provided by Transmission
-if [[ -n "$TR_TORRENT_DIR"  ]] && [[ -n "$TR_TORRENT_NAME" ]]; then
+if [[ "$#" -eq "0" && -n "$TR_TORRENT_DIR" && -n "$TR_TORRENT_NAME" ]]; then
+    log "Triggered by Transmission. Arguments[$#]: $@"
     readonly TORRENT_PATH="$TR_TORRENT_DIR/$TR_TORRENT_NAME"
 #Provided by aria2c
 elif [[ -n "$1" ]] && [[ -n "$2" ]] && [[ -n "$3" ]]; then
