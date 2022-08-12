@@ -17,6 +17,9 @@ function log() {
 if [[ "$#" -eq "0" && -n "$TR_TORRENT_DIR" && -n "$TR_TORRENT_NAME" ]]; then
     log "Triggered by Transmission. Arguments[$#]: $@"
     readonly TORRENT_PATH="$TR_TORRENT_DIR/$TR_TORRENT_NAME"
+elif [[ "$#" -eq "1" ]]; then
+    # readonly is_debug_mode="true"
+    readonly TORRENT_PATH="$1"
 #Provided by aria2c
 elif [[ "$#" -eq "3" ]]; then
     function correct_aria2c_arg_path() {
@@ -32,9 +35,6 @@ elif [[ "$#" -eq "3" ]]; then
     }
     log "Triggered by aria2c. Arguments[$#]: $@"
     readonly TORRENT_PATH="$( correct_aria2c_arg_path "$2" "$3" )"
-elif [[ "$#" -eq "1" ]]; then
-    # readonly is_debug_mode="true"
-    readonly TORRENT_PATH="$1"
 fi
 
 if [[ -z "$TORRENT_PATH" ]]; then
