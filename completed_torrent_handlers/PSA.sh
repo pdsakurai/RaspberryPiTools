@@ -54,14 +54,14 @@ function process_movie() {
     local -ra sed_additional_option=( "s/(\?\([0-9]\{4\}\))\?\(.*$\)/\(\1)/" )
     local -r folder_name_cleaned="$( clean_text_using_sed "$folder_name_original" sed_additional_option[@] )"
     local entry_name
-    ls -1 "$torrent_path" | while read entry_name; do
+    while read entry_name; do
         local entry_full_file_path="$torrent_path/$entry_name"
         if [[ -f "$torrent_path/$entry_name" ]] && [[ "${entry_name%.*}" == "$folder_name_original" ]]; then
             rename "$entry_full_file_path" "$folder_name_cleaned"
         else
             delete "$entry_full_file_path"
         fi
-    done
+    done <<< $( ls -1 "$torrent_path" )
 
     local -r cleaned_torrent_path="$( rename "$torrent_path" "$folder_name_cleaned" )"
     move "$cleaned_torrent_path" "$destination"
@@ -89,12 +89,12 @@ function process_tvshow(){
 
         local file_name
         local has_processed_tvshow
-        ls -1 "$torrent_path" | while read file_name; do
+        while read file_name; do
             if [[ -f "$torrent_path/$file_name" ]] && [[ "$file_name" =~ ^$tv_show_title ]]; then 
                 process_tvshow "$torrent_path/$file_name" "$destination"
                 has_processed_tvshow="true"
             fi
-        done
+        done <<< $( ls -1 "$torrent_path" )
 
         [[ -n "$has_processed_tvshow" ]] && delete "$torrent_path"
     fi
