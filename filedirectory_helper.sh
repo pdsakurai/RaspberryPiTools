@@ -24,8 +24,10 @@ function log() {
     local -r time_now="$( date "+%Y-%m-%dT%H:%M:%S.%3N" )"
     logger -t "$_filedirectory_helper_sh" "$text"
 
-    touch $log_file
-    sed -i "1 s|^|<$time_now> $_filedirectory_helper_sh: $text\n|" "$log_file"
+    text="<$time_now> $_filedirectory_helper_sh: $text\n"
+    [[ -e "$log_file" ]] \
+        && sed -i "1 s|^|$text|" "$log_file" \
+        || printf "$text" > "$log_file"
 }
 
 function get_base_directory() {
