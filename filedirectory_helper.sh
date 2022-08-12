@@ -41,8 +41,8 @@ function get_file_extension() {
 }
 
 function rename() {
-    local full_path="${1:?Missing: Full file/folder path}"
-    local -r new_name="${2:?Missing: New name}"
+    local -r full_path="${1:?Missing: Full file/folder path}"
+    local new_name="${2:?Missing: New name}"
 
     if [[ ! -e "$full_path" ]]; then
         log "Cannot rename non-existing item: \"$full_path\""
@@ -58,17 +58,18 @@ function rename() {
         && local -r what="file" \
         || local -r what="folder"
 
-    local -r base_directory"=$( get_base_directory "$full_path" )"
     local -r file_extension="$( [[ -z "$( get_file_extension "$new_name" )" ]] && get_file_extension "$full_path" )"
-    local -r new_full_file_path="$base_directory$new_name$file_extension"
+    new_name="$new_name$file_extension"
 
+    local -r base_directory"=$( get_base_directory "$full_path" )"
+    local -r new_full_file_path="$base_directory$new_name"
     if [[ -e "$new_full_file_path" ]]; then
         log "Cannot rename \"$full_path\" to an existing $what: \"$new_name\""
         return 1
     fi
 
     $cmd_rename "${full_path%/}" "$new_full_file_path"
-    log "Renamed $what: \"$full_path\" to \"$new_name$file_extension\""
+    log "Renamed $what: \"$full_path\" to \"$new_name\""
     return 0
 }
 
