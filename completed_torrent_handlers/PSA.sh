@@ -5,14 +5,15 @@
     || readonly _PSA_sh="PSA.sh[$$]"
 
 function is_from_PSA() {
-    local -r torrent_path="${1:?Missing: Torrent path}"
-
+    local torrent_path="${1:?Missing: Torrent path}"
+    torrent_path="${torrent_path%/}"
     [[ "${torrent_path##*/}" =~ .HEVC-PSA ]] && return 0
     return 1
 }
 
 function is_a_tvshow() {
-    local -r torrent_path="${1:?Missing: Torrent path}"
+    local torrent_path="${1:?Missing: Torrent path}"
+    torrent_path="${torrent_path%/}"
     local -r item="${torrent_path##*/}"
     [[ -f "$torrent_path" ]] && [[ "$item" =~ .S[[:digit:]]+E[[:digit:]]+. ]] && return 0
     [[ -d "$torrent_path" ]] && [[ "$item" =~ .S[[:digit:]]+.COMPLETE. ]] && return 0
