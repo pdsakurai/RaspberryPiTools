@@ -21,13 +21,13 @@ function get_group_id {
 function tag_client_to_group {
     cmd_sql_gravity "insert into 'client_by_group' (client_id, group_id) values (${1:?Missing ${FUNCNAME[0]}.arg1: client ID}, ${2:?Missing ${FUNCNAME[0]}.arg2: group ID});" 2> /dev/null
 
-    [ $? -ne 0 ] && log "Warning: Client is already in the group."
+    [[ $? -ne 0 ]] && log "Warning: Client is already in the group."
 }
 
 function untag_client_from_group {
     local changes_count=$( cmd_sql_gravity "delete from 'client_by_group' where client_id=${1:?Missing ${FUNCNAME[0]}.arg1: client ID} and group_id=${2:?Missing ${FUNCNAME[0]}.arg2: group ID}; select changes();" 2> /dev/null )
 
-    [ $changes_count -eq 0 ] && log "Warning: Client is already not in the group."
+    [[ $changes_count -eq 0 ]] && log "Warning: Client is already not in the group."
 }
 
 function update_group_status {
@@ -35,10 +35,10 @@ function update_group_status {
     local new_status="${2:?Missing ${FUNCNAME[0]}.arg2: new status}"
 
     new_status=$( normalize_state "$new_status" )
-    [ $? -ne 0 ] && return 1
+    [[ $? -ne 0 ]] && return 1
 
     local changes_count=$( cmd_sql_gravity "update 'group' set enabled=$new_status where name='$group_name' and enabled!=$new_status; select changes();" )
-    [ $changes_count -eq 0 ] && log "Warning: Nothing was updated."
+    [[ $changes_count -eq 0 ]] && log "Warning: Nothing was updated."
 }
 
 function normalize_state {
@@ -69,8 +69,8 @@ function modify_client_group_tagging {
         client_ids="$client_ids $( get_client_ids "$client_hostname" )"
     done
 
-    [ -z "$group_id" ] && log "Error: Group not found." && return 1
-    [ -z "$client_ids" ] && log "Error: Client not found." && return 1
+    [[ -z "$group_id" ]] && log "Error: Group not found." && return 1
+    [[ -z "$client_ids" ]] && log "Error: Client not found." && return 1
     
     for client_id in $client_ids; do
         case $operation in
@@ -90,4 +90,4 @@ case ${1:?Missing arg1: operation} in
     *)                          log "Error: Unsupported input operation: $operation" && return 1 ;;
 esac
 
-[ $? -eq 0 ] && apply_changes && log "Info: Operation succeeded." || log "Error: Operation failed."
+[[ $? -eq 0 ]] && apply_changes && log "Info: Operation succeeded." || log "Error: Operation failed."
