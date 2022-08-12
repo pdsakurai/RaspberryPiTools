@@ -18,12 +18,26 @@ if [[ "$#" -eq "0" && -n "$TR_TORRENT_DIR" && -n "$TR_TORRENT_NAME" ]]; then
     log "Triggered by Transmission. Arguments[$#]: $@"
     readonly TORRENT_PATH="$TR_TORRENT_DIR/$TR_TORRENT_NAME"
 #Provided by aria2c
-elif [[ -n "$1" ]] && [[ -n "$2" ]] && [[ -n "$3" ]]; then
-    readonly TORRENT_PATH="$3"
-elif [[ -e "$1" ]] && [[ -z "$2" ]]; then
-    readonly is_debug_mode="true"
+elif [[ "$#" -eq "3" ]]; then
+    function correct_aria2c_arg_path() {
+        local -r files_count=${1:?Missing: Files count}
+        local first_full_file_path=${2:?Missing: First full file path}
+
+        [[ "$files_count" -lt "1" ]] && return 1
+        [[ "$files_count" -eq "1" ]] && printf "$first_full_file_path" && return 0
+
+        first_full_file_path="${first_full_file_path%/}"
+        printf "${first_full_file_path%/*}"
+        return 0
+    }
+    log "Triggered by aria2c. Arguments[$#]: $@"
+    readonly TORRENT_PATH="$( correct_aria2c_arg_path "$2" "$3" )"
+elif [[ "$#" -eq "1" ]]; then
+    # readonly is_debug_mode="true"
     readonly TORRENT_PATH="$1"
-else
+fi
+
+if [[ -z "$TORRENT_PATH" ]]; then
     log "No valid arguments found. Arguments[$#]: $@"
     exit 1
 fi
