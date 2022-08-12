@@ -87,7 +87,7 @@ case ${1:?Missing arg1: operation} in
     add_client_into_group)      modify_client_group_tagging "tag" "$2" "$3" ;;
     remove_client_from_group)   modify_client_group_tagging "untag" "$2" "$3" ;;
     update_group_status)        update_group_status "$2" "$3" ;;
-    *)                          log "Error: Unsupported input operation: $operation" && exit 1 ;;
+    *)                          log "Error: Unsupported input operation: $1" && exit 1 ;;
 esac
 
 if [[ $? -eq 0 ]]; then
