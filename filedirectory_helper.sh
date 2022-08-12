@@ -21,7 +21,7 @@ fi
 
 function log() {
     local text="$( [[ -n "$is_debug_mode" ]] && printf "!DEBUG MODE! " )${@:?Cannot do empty logging}"
-    local -r time_now="$( date "+%Y-%m-%dT%H:%M:%S" )"
+    local -r time_now="$( date "+%Y-%m-%dT%H:%M:%S.%3N" )"
     logger -t "$_filedirectory_helper_sh" "$text"
 
     touch $log_file
