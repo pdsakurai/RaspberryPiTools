@@ -1,5 +1,17 @@
 #!/bin/bash
 
+function log() {
+    local -r tag="handle_completed_torrent.sh[$$]"
+    local text="$( [[ -n "$is_debug_mode" ]] && printf "!DEBUG MODE! " )${@:?Cannot do empty logging}"
+    local -r time_now="$( date "+%Y-%m-%dT%H:%M:%S.%3N" )"
+    logger -t "$tag" "$text"
+
+    text="<$time_now> $tag: $text\n"
+    [[ -e "$log_file" ]] \
+        && sed -i "1 s|^|$text|" "$log_file" \
+        || printf "$text" > "$log_file"
+}
+
 #Provided by Transmission
 if [[ -n "$TR_TORRENT_DIR"  ]] && [[ -n "$TR_TORRENT_NAME" ]]; then
     readonly TORRENT_PATH="$TR_TORRENT_DIR/$TR_TORRENT_NAME"
@@ -10,9 +22,11 @@ elif [[ -e "$1" ]] && [[ -z "$2" ]]; then
     readonly is_debug_mode="true"
     readonly TORRENT_PATH="$1"
 else
-    echo "No valid arguments found."
+    log "No valid arguments found. Arguments[$#]: $@"
     exit 1
 fi
+
+log "Proccesing torrent path: $TORRENT_PATH"
 
 #Environment
 readonly dir_root="/mnt/eHDD/Videos"

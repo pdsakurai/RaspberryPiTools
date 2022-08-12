@@ -19,17 +19,6 @@ else
     readonly cmd_move=mv
 fi
 
-function log() {
-    local text="$( [[ -n "$is_debug_mode" ]] && printf "!DEBUG MODE! " )${@:?Cannot do empty logging}"
-    local -r time_now="$( date "+%Y-%m-%dT%H:%M:%S.%3N" )"
-    logger -t "$_filedirectory_helper_sh" "$text"
-
-    text="<$time_now> $_filedirectory_helper_sh: $text\n"
-    [[ -e "$log_file" ]] \
-        && sed -i "1 s|^|$text|" "$log_file" \
-        || printf "$text" > "$log_file"
-}
-
 function get_base_directory() {
     local full_path="${1:?Missing: Full file/folder path}"
     full_path="${full_path%/}"
