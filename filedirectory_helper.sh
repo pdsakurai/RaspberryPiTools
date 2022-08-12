@@ -88,7 +88,7 @@ function move() {
         ls -1 "$source" | while read file_name; do
             $cmd_move --force --strip-trailing-slashes "$source/$file_name" "$complete_destination"
         done
-        $cmd_delete --recursive --force "$source"
+        delete "$source"
         what="folder"
     elif [[ -f "$source" ]]; then
         $cmd_move --force --strip-trailing-slashes "$source" "$destination"
