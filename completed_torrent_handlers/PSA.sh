@@ -50,7 +50,8 @@ function process_movie() {
     local -r destination="${2:?Missing: Destination}"
 
     local -r folder_name_original="${torrent_path##*/}"
-    local -r folder_name_cleaned="$( clean_text_using_sed "$folder_name_original" ( "s/(\?\([0-9]\{4\}\))\?\(.*$\)/\(\1)/" ) )"
+    local -ra sed_additional_option=( "s/(\?\([0-9]\{4\}\))\?\(.*$\)/\(\1)/" )
+    local -r folder_name_cleaned="$( clean_text_using_sed "$folder_name_original" sed_additional_option[@] )"
     local entry_name
     for entry_name in $( ls "$torrent_path" ); do
         local -r entry_full_file_path="$torrent_path/$entry_name"
