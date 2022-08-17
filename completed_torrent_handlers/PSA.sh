@@ -61,7 +61,7 @@ function process_movie() {
         else
             delete "$entry_full_file_path"
         fi
-    done <<< $( ls -1 "$torrent_path" )
+    done <<< $( ls -1A "$torrent_path" )
 
     rename "$torrent_path" "$folder_name_cleaned"
     local -r base_directory="$( get_base_directory "$torrent_path" )"
@@ -97,7 +97,7 @@ function process_tvshow(){
                 process_tvshow "$torrent_path/$file_name" "$destination"
                 has_processed_tvshow="true"
             fi
-        done <<< $( ls -1 "$torrent_path" )
+        done <<< $( ls -1A "$torrent_path" )
 
         [[ -n "$has_processed_tvshow" ]] && delete "$torrent_path"
     fi

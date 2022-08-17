@@ -87,9 +87,9 @@ function move() {
         local -r complete_destination="$destination/$folder_name"
         $cmd_create_directory --parents "$complete_destination"
         local file_name
-        ls -1 "$source" | while read file_name; do
+        while read file_name; do
             $cmd_move --force --strip-trailing-slashes "$source/$file_name" "$complete_destination"
-        done
+        done <<< $( ls -1A "$source" )
         $cmd_delete --recursive "$source"
         what="folder"
     elif [[ -f "$source" ]]; then
