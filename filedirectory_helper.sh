@@ -86,10 +86,9 @@ function move() {
         local -r folder_name="${source##*/}"
         local -r complete_destination="$destination/$folder_name"
         $cmd_create_directory --parents "$complete_destination"
-        local file_name
-        while read file_name; do
+        ls -1A "$source" | while read file_name; do
             $cmd_move --force --strip-trailing-slashes "$source/$file_name" "$complete_destination"
-        done <<< $( ls -1A "$source" )
+        done
         delete "$source" "quite_mode"
         what="folder"
     elif [[ -f "$source" ]]; then
@@ -115,10 +114,9 @@ function delete() {
         $cmd_delete "$entry"
         type="file"
     elif [[ -d "$entry" ]]; then
-        local item
-        while read item; do
-            delete "$item" "quite_mode"
-        done <<< $( ls -1A "$entry" )
+        ls -1A "$entry" | while read item; do
+            delete "${entry%/}/$item" "quite_mode"
+        done
         $cmd_remove_directory "$entry"
         type="folder"
     fi
