@@ -9,11 +9,13 @@ if [[ -n "$is_debug_mode" ]]; then
         local -r nothing=""
     }
     readonly cmd_create_directory=noop
+    readonly cmd_remove_directory=noop
     readonly cmd_delete=noop
     readonly cmd_rename=noop
     readonly cmd_move=noop
 else
     readonly cmd_create_directory=mkdir
+    readonly cmd_remove_directory=rmdir
     readonly cmd_delete=rm
     readonly cmd_rename=mv
     readonly cmd_move=mv
@@ -112,7 +114,11 @@ function delete() {
         $cmd_delete "$entry"
         type="file"
     elif [[ -d "$entry" ]]; then
-        $cmd_delete --recursive "$entry"
+        local item
+        while read item; do
+            delete "$item"
+        done <<< $( ls -1A "$entry" )
+        $cmd_remove_directory "$entry"
         type="folder"
     fi
 
