@@ -108,6 +108,7 @@ function move() {
 
 function delete() {
     local -r entry=${1:?Missing: Entry to delete}
+    local -r quite_mode="$2"
 
     local type=""
     if [[ -f "$entry" ]]; then
@@ -116,17 +117,17 @@ function delete() {
     elif [[ -d "$entry" ]]; then
         local item
         while read item; do
-            delete "$item"
+            delete "$item" "quite_mode"
         done <<< $( ls -1A "$entry" )
         $cmd_remove_directory "$entry"
         type="folder"
     fi
 
     if [[ -e "$entry" ]]; then
-        log "Cannot delete $type: \"$entry\""
+        [[ -z "$quite_mode" ]] && log "Cannot delete $type: \"$entry\""
         return 1
     else
-        log "Deleted $type: \"$entry\""
+        [[ -z "$quite_mode" ]] && log "Deleted $type: \"$entry\""
         return 0
     fi
 }
