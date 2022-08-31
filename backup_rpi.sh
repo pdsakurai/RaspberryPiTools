@@ -7,7 +7,7 @@ readonly backupDirectory="/mnt/eHDD/Software/Devices/Raspberry Pi 3 B+"
 readonly backupScript="$backupDirectory/bkup_rpimage/bkup_rpimage.sh"
 readonly shrinkScript="$backupDirectory/PiShrink/pishrink.sh"
 
-readonly debugMode=$booleanFalse
+readonly debug_mode=
 readonly forceShrink=$booleanFalse
 readonly logFile="$backupDirectory/log.txt"
 touch "$logFile"
@@ -15,7 +15,7 @@ touch "$logFile"
 log(){
     local -r l_message=$1
     local -r l_timeNow=$(date "+%Y-%m-%dT%H:%M:%S")
-    if [[ $debugMode == $booleanTrue ]]; then
+    if [[ -n $debug_mode ]]; then
         echo "<$l_timeNow> [DEBUG MODE] $l_message" >> "$logFile"
     else
         echo "<$l_timeNow> $l_message" >> "$logFile"
@@ -80,7 +80,7 @@ readonly dailyBackupFilename="rpi_backup.img"
 readonly dailyBackupFullFilePath="$backupDirectory/$dailyBackupFilename"
 
 SECONDS=0
-[[ $debugMode == $booleanFalse ]] && sudo bash "$backupScript" start -c "$dailyBackupFullFilePath"
+[[ -z $debug_mode ]] && sudo bash "$backupScript" start -c "$dailyBackupFullFilePath"
 readonly durationBackup=$SECONDS
 
 readonly fileSizeInBytesDailyBackup=$( stat -c%s "$dailyBackupFullFilePath" )
@@ -92,7 +92,7 @@ readonly bimonthlyBackupFullFilePath="$bimonthlyBackupDirectory/$bimonthlyBackup
 
 if [[ $(date +%d) == "01" || $(date +%d) == "16" || $forceShrink == $booleanTrue ]] && [[ ! -e $bimonthlyBackupFullFilePath ]]; then
     SECONDS=0
-    [[ $debugMode == $booleanFalse ]] && sudo bash "$shrinkScript" -z "$dailyBackupFullFilePath" "$bimonthlyBackupFullFilePath"
+    [[ -z $debug_mode ]] && sudo bash "$shrinkScript" -z "$dailyBackupFullFilePath" "$bimonthlyBackupFullFilePath"
     readonly durationShrinkingBackup=$SECONDS
 
     readonly fileSizeInBytesBimonthlyBackup=$( stat -c%s "$bimonthlyBackupFullFilePath.gz" )
@@ -103,7 +103,7 @@ if [[ $(date +%d) == "01" || $(date +%d) == "16" || $forceShrink == $booleanTrue
     if [[ $currentNumberOfBimonthlyBackups -gt $maxNumberOfBimonthlyBackups ]]; then
         readonly oldestBimonthlyBackupFilename=$( ls -1 "$bimonthlyBackupDirectory" | head -1 )
         readonly fullFilePath="$bimonthlyBackupDirectory/$oldestBimonthlyBackupFilename"
-        [[ $debugMode == $booleanFalse ]] &&  rm "fullFilePath"
+        [[ -z $debug_mode ]] &&  rm "fullFilePath"
         log "Removed oldest backup file: \"$fullFilePath\""
 	fi
 fi
