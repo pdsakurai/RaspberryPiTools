@@ -3,107 +3,107 @@
 readonly booleanTrue=0
 readonly booleanFalse=1
 
-readonly backupDirectory="/mnt/eHDD/Software/Devices/Raspberry Pi 3 B+"
-readonly backupScript="$backupDirectory/bkup_rpimage/bkup_rpimage.sh"
-readonly shrinkScript="$backupDirectory/PiShrink/pishrink.sh"
+readonly backup_directory="/mnt/eHDD/Software/Devices/Raspberry Pi 3 B+"
+readonly script_backup="$backup_directory/bkup_rpimage/bkup_rpimage.sh"
+readonly script_shrink="$backup_directory/PiShrink/pishrink.sh"
 
 readonly debug_mode=
-readonly forceShrink=$booleanFalse
-readonly logFile="$backupDirectory/log.txt"
-touch "$logFile"
+readonly forced_shrink=$booleanFalse
+readonly log_file="$backup_directory/log.txt"
+touch "$log_file"
 
 log(){
-    local -r l_message=$1
-    local -r l_timeNow=$(date "+%Y-%m-%dT%H:%M:%S")
+    local -r message=$1
+    local -r time_now=$(date "+%Y-%m-%dT%H:%M:%S")
     if [[ -n $debug_mode ]]; then
-        echo "<$l_timeNow> [DEBUG MODE] $l_message" >> "$logFile"
+        echo "<$time_now> [DEBUG MODE] $message" >> "$log_file"
     else
-        echo "<$l_timeNow> $l_message" >> "$logFile"
+        echo "<$time_now> $message" >> "$log_file"
     fi
 }
 
-changeSecondsToText() {
-    local l_displaySeconds=$1
+change_seconds_to_text() {
+    local display_seconds=$1
 
-    local -r l_secondsInOneHour=3600
-    local -r l_displayHours=$(( l_displaySeconds / l_secondsInOneHour ))
-    l_displaySeconds=$(( l_displaySeconds % l_secondsInOneHour ))
+    local -r seconds_in_one_hour=3600
+    local -r display_hours=$(( display_seconds / seconds_in_one_hour ))
+    display_seconds=$(( display_seconds % seconds_in_one_hour ))
 
-    local -r l_secondsInOneMinute=60
-    local -r l_displayMinutes=$(( l_displaySeconds / l_secondsInOneMinute ))
-    l_displaySeconds=$(( l_displaySeconds % l_secondsInOneMinute ))
+    local -r seconds_in_one_minute=60
+    local -r display_minutes=$(( display_seconds / seconds_in_one_minute ))
+    display_seconds=$(( display_seconds % seconds_in_one_minute ))
 
-    printf "%02d:%02d:%02d" $l_displayHours $l_displayMinutes $l_displaySeconds
+    printf "%02d:%02d:%02d" $display_hours $display_minutes $display_seconds
 }
 
 absolute() {
-    local l_number=$1
+    local number=$1
 
-    [[ $l_number -lt 0 ]] && l_number=$(( l_number * -1 ))
+    [[ $number -lt 0 ]] && number=$(( number * -1 ))
 
-    echo $l_number
+    echo $number
 }
 
-getDelta() {
-    local -r l_numerator=$1
-    local -r l_denominator=$2
-    local -r l_precision=9
+get_delta() {
+    local -r numerator=$1
+    local -r denominator=$2
+    local -r precision=9
 
-    local -r l_precisionMultiplier=$(( 10**l_precision ))
-    local l_result=$(( (l_numerator*l_precisionMultiplier/l_denominator) - l_precisionMultiplier ))
+    local -r precision_multiplier=$(( 10**precision ))
+    local result=$(( (numerator*precision_multiplier/denominator) - precision_multiplier ))
 
-    [[ $l_result -lt 0 ]] && local -r l_sign=- || local -r l_sign=+
-    l_result=$( absolute "$l_result" )
+    [[ $result -lt 0 ]] && local -r sign=- || local -r sign=+
+    result=$( absolute "$result" )
 
-    local -r l_wholeNumberMultiplier=$(( 10**(l_precision - 2) ))
-    local -r l_wholeNumber=$(( l_result/l_wholeNumberMultiplier ))
+    local -r whole_number_multiplier=$(( 10**(precision - 2) ))
+    local -r whole_number=$(( result/whole_number_multiplier ))
 
-    local -r l_fractionNumberMultiplier=$(( 10**(l_precision - 4) ))
-    local -r l_fractionNumber=$(( (l_result%(l_wholeNumber*l_wholeNumberMultiplier))/l_fractionNumberMultiplier ))
+    local -r fraction_number_multiplier=$(( 10**(precision - 4) ))
+    local -r fraction_number=$(( (result%(whole_number*whole_number_multiplier))/fraction_number_multiplier ))
 
-    printf "%s%d.%02d" $l_sign $l_wholeNumber $l_fractionNumber
+    printf "%s%d.%02d" $sign $whole_number $fraction_number
 }
 
-toGigabyte() {
-    local -r l_bytes=$1
+to_gigabyte() {
+    local -r bytes=$1
 
-    local -r l_bytesInOneGigabyte=$(( 10**9 ))
-    local -r l_precision=$(( l_bytesInOneGigabyte / 10**2 ))
+    local -r bytes_in_one_gigabyte=$(( 10**9 ))
+    local -r precision=$(( bytes_in_one_gigabyte / 10**2 ))
 
-    local -r l_wholeNumber=$(( l_bytes / l_bytesInOneGigabyte ))
-    local -r l_fractionalNumber=$(( (l_bytes%(l_wholeNumber*l_bytesInOneGigabyte)) / l_precision ))
+    local -r whole_number=$(( bytes / bytes_in_one_gigabyte ))
+    local -r fractional_number=$(( (bytes%(whole_number*bytes_in_one_gigabyte)) / precision ))
 
-    printf "%d.%02d" $l_wholeNumber $l_fractionalNumber
+    printf "%d.%02d" $whole_number $fractional_number
 }
 
-readonly dailyBackupFilename="rpi_backup.img"
-readonly dailyBackupFullFilePath="$backupDirectory/$dailyBackupFilename"
+readonly daily_backup_filename="rpi_backup.img"
+readonly daily_backup_full_filepath="$backup_directory/$daily_backup_filename"
 
 SECONDS=0
-[[ -z $debug_mode ]] && sudo bash "$backupScript" start -c "$dailyBackupFullFilePath"
-readonly durationBackup=$SECONDS
+[[ -z $debug_mode ]] && sudo bash "$script_backup" start -c "$daily_backup_full_filepath"
+readonly duration_backup=$SECONDS
 
-readonly fileSizeInBytesDailyBackup=$( stat -c%s "$dailyBackupFullFilePath" )
-log "Completed the $( toGigabyte $fileSizeInBytesDailyBackup )GB backup within $( changeSecondsToText $durationBackup ): \"$dailyBackupFullFilePath\"."
+readonly file_size_in_bytes_daily_backup=$( stat -c%s "$daily_backup_full_filepath" )
+log "Completed the $( to_gigabyte $file_size_in_bytes_daily_backup )GB backup within $( change_seconds_to_text $duration_backup ): \"$daily_backup_full_filepath\"."
 
-readonly bimonthlyBackupFilename="rpi_backup_$(date +%Y-%m-%d).img"
-readonly bimonthlyBackupDirectory="$backupDirectory/Snapshots"
-readonly bimonthlyBackupFullFilePath="$bimonthlyBackupDirectory/$bimonthlyBackupFilename"
+readonly bimonthly_backup_filename="rpi_backup_$(date +%Y-%m-%d).img"
+readonly bimonthly_backup_directory="$backup_directory/Snapshots"
+readonly bimonthly_backup_full_filepath="$bimonthly_backup_directory/$bimonthly_backup_filename"
 
-if [[ $(date +%d) == "01" || $(date +%d) == "16" || $forceShrink == $booleanTrue ]] && [[ ! -e $bimonthlyBackupFullFilePath ]]; then
+if [[ $(date +%d) == "01" || $(date +%d) == "16" || $forced_shrink == $booleanTrue ]] && [[ ! -e $bimonthly_backup_full_filepath ]]; then
     SECONDS=0
-    [[ -z $debug_mode ]] && sudo bash "$shrinkScript" -z "$dailyBackupFullFilePath" "$bimonthlyBackupFullFilePath"
-    readonly durationShrinkingBackup=$SECONDS
+    [[ -z $debug_mode ]] && sudo bash "$script_shrink" -z "$daily_backup_full_filepath" "$bimonthly_backup_full_filepath"
+    readonly duration_shrinking_backup=$SECONDS
 
-    readonly fileSizeInBytesBimonthlyBackup=$( stat -c%s "$bimonthlyBackupFullFilePath.gz" )
-    log "Created snapshot and shrinked it by $( getDelta $fileSizeInBytesBimonthlyBackup $fileSizeInBytesDailyBackup )% to $( toGigabyte $fileSizeInBytesBimonthlyBackup )GB within $( changeSecondsToText $durationShrinkingBackup ): \"$bimonthlyBackupFullFilePath.gz\"."
+    readonly file_size_in_bytes_bimonthly_backup=$( stat -c%s "$bimonthly_backup_full_filepath.gz" )
+    log "Created snapshot and shrinked it by $( get_delta $file_size_in_bytes_bimonthly_backup $file_size_in_bytes_daily_backup )% to $( to_gigabyte $file_size_in_bytes_bimonthly_backup )GB within $( change_seconds_to_text $duration_shrinking_backup ): \"$bimonthly_backup_full_filepath.gz\"."
 
-    readonly currentNumberOfBimonthlyBackups=$( ls -1 "$bimonthlyBackupDirectory" | wc -l )
-    readonly maxNumberOfBimonthlyBackups=12
-    if [[ $currentNumberOfBimonthlyBackups -gt $maxNumberOfBimonthlyBackups ]]; then
-        readonly oldestBimonthlyBackupFilename=$( ls -1 "$bimonthlyBackupDirectory" | head -1 )
-        readonly fullFilePath="$bimonthlyBackupDirectory/$oldestBimonthlyBackupFilename"
-        [[ -z $debug_mode ]] &&  rm "fullFilePath"
-        log "Removed oldest backup file: \"$fullFilePath\""
+    readonly current_number_of_bimonthly_backups=$( ls -1 "$bimonthly_backup_directory" | wc -l )
+    readonly max_number_of_bimonthly_backups=12
+    if [[ $current_number_of_bimonthly_backups -gt $max_number_of_bimonthly_backups ]]; then
+        readonly oldest_bimonthly_backup_filename=$( ls -1 "$bimonthly_backup_directory" | head -1 )
+        readonly full_filepath="$bimonthly_backup_directory/$oldest_bimonthly_backup_filename"
+        [[ -z $debug_mode ]] &&  rm "full_filepath"
+        log "Removed oldest backup file: \"$full_filepath\""
 	fi
 fi
