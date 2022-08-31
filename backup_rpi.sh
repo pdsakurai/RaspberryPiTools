@@ -97,7 +97,7 @@ if [[ $(date +%d) == "01" || $(date +%d) == "16" || -n "$forced_shrink" ]] \
     readonly current_number_of_bimonthly_backups=$( ls -1A "$bimonthly_backup_directory" | grep -c "rpi_backup_" )
     readonly max_number_of_bimonthly_backups=12
     if [[ $current_number_of_bimonthly_backups -gt $max_number_of_bimonthly_backups ]]; then
-        readonly oldest_bimonthly_backup_filename=$( ls -1 "$bimonthly_backup_directory" | head -1 )
+        readonly oldest_bimonthly_backup_filename=$( ls -1AX "$bimonthly_backup_directory" | head -1 )
         readonly full_filepath="$bimonthly_backup_directory/$oldest_bimonthly_backup_filename"
         [[ -z $debug_mode ]] &&  rm "full_filepath"
         log "Removed oldest backup file: \"$full_filepath\""
