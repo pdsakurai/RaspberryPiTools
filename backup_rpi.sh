@@ -21,7 +21,7 @@ function log() {
         || printf "$text" > "$log_file"
 }
 
-change_seconds_to_text() {
+function change_seconds_to_text() {
     local display_seconds=$1
 
     local -r seconds_in_one_hour=3600
@@ -35,7 +35,7 @@ change_seconds_to_text() {
     printf "%02d:%02d:%02d" $display_hours $display_minutes $display_seconds
 }
 
-absolute() {
+function absolute() {
     local number=$1
 
     [[ $number -lt 0 ]] && number=$(( number * -1 ))
@@ -43,7 +43,7 @@ absolute() {
     echo $number
 }
 
-get_delta() {
+function get_delta() {
     local -r numerator=$1
     local -r denominator=$2
     local -r precision=9
@@ -63,7 +63,7 @@ get_delta() {
     printf "%s%d.%02d" $sign $whole_number $fraction_number
 }
 
-to_gigabyte() {
+function to_gigabyte() {
     local -r bytes=$1
 
     local -r bytes_in_one_gigabyte=$(( 10**9 ))
