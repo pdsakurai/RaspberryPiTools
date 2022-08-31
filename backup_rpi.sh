@@ -40,7 +40,7 @@ function absolute() {
 
     [[ $number -lt 0 ]] && number=$(( number * -1 ))
 
-    echo $number
+    printf "$number"
 }
 
 function get_delta() {
