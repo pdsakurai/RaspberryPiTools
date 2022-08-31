@@ -1,8 +1,5 @@
 #!/bin/bash
 
-readonly booleanTrue=0
-readonly booleanFalse=1
-
 readonly backup_directory="/mnt/eHDD/Software/Devices/Raspberry Pi 3 B+"
 readonly script_backup="$backup_directory/bkup_rpimage/bkup_rpimage.sh"
 readonly script_shrink="$backup_directory/PiShrink/pishrink.sh"
