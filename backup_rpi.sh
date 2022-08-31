@@ -22,7 +22,7 @@ function log() {
 }
 
 function change_seconds_to_text() {
-    local display_seconds=$1
+    local display_seconds=${1:?Missing: seconds}
 
     local -r seconds_in_one_hour=3600
     local -r display_hours=$(( display_seconds / seconds_in_one_hour ))
@@ -36,7 +36,7 @@ function change_seconds_to_text() {
 }
 
 function absolute() {
-    local number=$1
+    local number=${1:?Missing: Number}
 
     [[ $number -lt 0 ]] && number=$(( number * -1 ))
 
@@ -44,10 +44,10 @@ function absolute() {
 }
 
 function get_delta() {
-    local -r numerator=$1
-    local -r denominator=$2
+    local -r numerator=${1:?Missing: Numerator}
+    local -r denominator=${2:?Missing: Denominator}
+    
     local -r precision=9
-
     local -r precision_multiplier=$(( 10**precision ))
     local result=$(( (numerator*precision_multiplier/denominator) - precision_multiplier ))
 
@@ -64,7 +64,7 @@ function get_delta() {
 }
 
 function to_gigabyte() {
-    local -r bytes=$1
+    local -r bytes=${1:?Missing: Bytes}
 
     local -r bytes_in_one_gigabyte=$(( 10**9 ))
     local -r precision=$(( bytes_in_one_gigabyte / 10**2 ))
