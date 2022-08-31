@@ -21,8 +21,8 @@ function log() {
         || printf "$text" > "$log_file"
 }
 
-function change_seconds_to_text() {
-    local display_seconds=${1:?Missing: seconds}
+function print_elapsed_time() {
+    local display_seconds=$SECONDS
 
     local -r seconds_in_one_hour=3600
     local -r display_hours=$(( display_seconds / seconds_in_one_hour ))
@@ -79,10 +79,9 @@ readonly daily_backup_fullfilepath="$backup_directory/rpi_backup.img"
 
 SECONDS=0
 [[ -z $debug_mode ]] && sudo bash "$script_backup" start -c "$daily_backup_fullfilepath"
-readonly duration_backup=$SECONDS
-
 readonly file_size_in_bytes_daily_backup=$( stat -c%s "$daily_backup_fullfilepath" )
-log "Completed the $( byte_to_gigabyte $file_size_in_bytes_daily_backup )GB backup within $( change_seconds_to_text $duration_backup ) @ \"$daily_backup_fullfilepath\"."
+
+log "Completed the $( byte_to_gigabyte $file_size_in_bytes_daily_backup )GB backup within $( print_elapsed_time ) @ \"$daily_backup_fullfilepath\"."
 
 readonly bimonthly_backup_filename="rpi_backup_$(date +%Y-%m-%d).img"
 readonly bimonthly_backup_directory="$backup_directory/Snapshots"
@@ -92,10 +91,8 @@ if [[ $(date +%d) == "01" || $(date +%d) == "16" || -n "$forced_shrink" ]] \
     && [[ $( ls -1A "$bimonthly_backup_directory" | grep -c "$bimonthly_backup_filename" 2> /dev/null ) -gt 0 ]]; then
     SECONDS=0
     [[ -z $debug_mode ]] && sudo bash "$script_shrink" -Z "$daily_backup_fullfilepath" "$bimonthly_backup_full_filepath"
-    readonly duration_shrinking_backup=$SECONDS
-
     readonly file_size_in_bytes_bimonthly_backup=$( stat -c%s "$bimonthly_backup_full_filepath.gz" )
-    log "Created snapshot and shrinked it by $( get_delta $file_size_in_bytes_bimonthly_backup $file_size_in_bytes_daily_backup )% to $( byte_to_gigabyte $file_size_in_bytes_bimonthly_backup )GB within $( change_seconds_to_text $duration_shrinking_backup ): \"$bimonthly_backup_full_filepath.gz\"."
+    log "Created snapshot and shrinked it by $( get_delta $file_size_in_bytes_bimonthly_backup $file_size_in_bytes_daily_backup )% to $( byte_to_gigabyte $file_size_in_bytes_bimonthly_backup )GB within $( print_elapsed_time ): \"$bimonthly_backup_full_filepath.xz\"."
 
     readonly current_number_of_bimonthly_backups=$( ls -1 "$bimonthly_backup_directory" | wc -l )
     readonly max_number_of_bimonthly_backups=12
