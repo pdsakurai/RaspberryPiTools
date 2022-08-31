@@ -91,7 +91,7 @@ if [[ $(date +%d) == "01" || $(date +%d) == "16" || -n "$forced_shrink" ]] \
     && [[ $( ls -1A "$bimonthly_backup_directory" | grep -c "$bimonthly_backup_filename" 2> /dev/null ) -gt 0 ]]; then
     SECONDS=0
     [[ -z $debug_mode ]] && sudo bash "$script_shrink" -Z "$daily_backup_fullfilepath" "$bimonthly_backup_full_filepath"
-    readonly file_size_in_bytes_bimonthly_backup=$( stat -c%s "$bimonthly_backup_full_filepath.gz" )
+    readonly file_size_in_bytes_bimonthly_backup=$( stat -c%s "$bimonthly_backup_full_filepath.xz" )
     log "Created snapshot and shrinked it by $( get_delta $file_size_in_bytes_bimonthly_backup $file_size_in_bytes_daily_backup )% to $( byte_to_gigabyte $file_size_in_bytes_bimonthly_backup )GB within $( print_elapsed_time ): \"$bimonthly_backup_full_filepath.xz\"."
 
     readonly current_number_of_bimonthly_backups=$( ls -1A "$bimonthly_backup_directory" | grep -c "rpi_backup_" )
