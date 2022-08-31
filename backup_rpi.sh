@@ -88,7 +88,8 @@ readonly bimonthly_backup_filename="rpi_backup_$(date +%Y-%m-%d).img"
 readonly bimonthly_backup_directory="$backup_directory/Snapshots"
 readonly bimonthly_backup_full_filepath="$bimonthly_backup_directory/$bimonthly_backup_filename"
 
-if [[ $(date +%d) == "01" || $(date +%d) == "16" || -n "$forced_shrink" ]] && [[ ! -e $bimonthly_backup_full_filepath ]]; then
+if [[ $(date +%d) == "01" || $(date +%d) == "16" || -n "$forced_shrink" ]] \
+    && [[ $( ls -1A "$bimonthly_backup_directory" | grep -c "$bimonthly_backup_filename" 2> /dev/null ) -gt 0 ]]; then
     SECONDS=0
     [[ -z $debug_mode ]] && sudo bash "$script_shrink" -Z "$daily_backup_fullfilepath" "$bimonthly_backup_full_filepath"
     readonly duration_shrinking_backup=$SECONDS
