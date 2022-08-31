@@ -94,7 +94,7 @@ if [[ $(date +%d) == "01" || $(date +%d) == "16" || -n "$forced_shrink" ]] \
     readonly file_size_in_bytes_bimonthly_backup=$( stat -c%s "$bimonthly_backup_full_filepath.gz" )
     log "Created snapshot and shrinked it by $( get_delta $file_size_in_bytes_bimonthly_backup $file_size_in_bytes_daily_backup )% to $( byte_to_gigabyte $file_size_in_bytes_bimonthly_backup )GB within $( print_elapsed_time ): \"$bimonthly_backup_full_filepath.xz\"."
 
-    readonly current_number_of_bimonthly_backups=$( ls -1 "$bimonthly_backup_directory" | wc -l )
+    readonly current_number_of_bimonthly_backups=$( ls -1A "$bimonthly_backup_directory" | grep -c "rpi_backup_" )
     readonly max_number_of_bimonthly_backups=12
     if [[ $current_number_of_bimonthly_backups -gt $max_number_of_bimonthly_backups ]]; then
         readonly oldest_bimonthly_backup_filename=$( ls -1 "$bimonthly_backup_directory" | head -1 )
