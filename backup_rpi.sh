@@ -8,7 +8,7 @@ readonly script_backup="$backup_directory/bkup_rpimage/bkup_rpimage.sh"
 readonly script_shrink="$backup_directory/PiShrink/pishrink.sh"
 
 readonly debug_mode=
-readonly forced_shrink=$booleanFalse
+readonly forced_shrink=
 readonly log_file="$backup_directory/log.txt"
 touch "$log_file"
 
@@ -90,7 +90,7 @@ readonly bimonthly_backup_filename="rpi_backup_$(date +%Y-%m-%d).img"
 readonly bimonthly_backup_directory="$backup_directory/Snapshots"
 readonly bimonthly_backup_full_filepath="$bimonthly_backup_directory/$bimonthly_backup_filename"
 
-if [[ $(date +%d) == "01" || $(date +%d) == "16" || $forced_shrink == $booleanTrue ]] && [[ ! -e $bimonthly_backup_full_filepath ]]; then
+if [[ $(date +%d) == "01" || $(date +%d) == "16" || -n "$forced_shrink" ]] && [[ ! -e $bimonthly_backup_full_filepath ]]; then
     SECONDS=0
     [[ -z $debug_mode ]] && sudo bash "$script_shrink" -z "$daily_backup_full_filepath" "$bimonthly_backup_full_filepath"
     readonly duration_shrinking_backup=$SECONDS
