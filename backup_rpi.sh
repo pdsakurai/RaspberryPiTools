@@ -75,15 +75,14 @@ function byte_to_gigabyte() {
     printf "%d.%02d" $whole_number $fractional_number
 }
 
-readonly daily_backup_filename="rpi_backup.img"
-readonly daily_backup_full_filepath="$backup_directory/$daily_backup_filename"
+readonly daily_backup_fullfilepath="$backup_directory/rpi_backup.img"
 
 SECONDS=0
-[[ -z $debug_mode ]] && sudo bash "$script_backup" start -c "$daily_backup_full_filepath"
+[[ -z $debug_mode ]] && sudo bash "$script_backup" start -c "$daily_backup_fullfilepath"
 readonly duration_backup=$SECONDS
 
-readonly file_size_in_bytes_daily_backup=$( stat -c%s "$daily_backup_full_filepath" )
-log "Completed the $( byte_to_gigabyte $file_size_in_bytes_daily_backup )GB backup within $( change_seconds_to_text $duration_backup ): \"$daily_backup_full_filepath\"."
+readonly file_size_in_bytes_daily_backup=$( stat -c%s "$daily_backup_fullfilepath" )
+log "Completed the $( byte_to_gigabyte $file_size_in_bytes_daily_backup )GB backup within $( change_seconds_to_text $duration_backup ) @ \"$daily_backup_fullfilepath\"."
 
 readonly bimonthly_backup_filename="rpi_backup_$(date +%Y-%m-%d).img"
 readonly bimonthly_backup_directory="$backup_directory/Snapshots"
@@ -91,7 +90,7 @@ readonly bimonthly_backup_full_filepath="$bimonthly_backup_directory/$bimonthly_
 
 if [[ $(date +%d) == "01" || $(date +%d) == "16" || -n "$forced_shrink" ]] && [[ ! -e $bimonthly_backup_full_filepath ]]; then
     SECONDS=0
-    [[ -z $debug_mode ]] && sudo bash "$script_shrink" -z "$daily_backup_full_filepath" "$bimonthly_backup_full_filepath"
+    [[ -z $debug_mode ]] && sudo bash "$script_shrink" -z "$daily_backup_fullfilepath" "$bimonthly_backup_full_filepath"
     readonly duration_shrinking_backup=$SECONDS
 
     readonly file_size_in_bytes_bimonthly_backup=$( stat -c%s "$bimonthly_backup_full_filepath.gz" )
