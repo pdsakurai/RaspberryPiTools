@@ -1,12 +1,14 @@
 #!/bin/bash
 
-readonly backup_directory="/mnt/eHDD/Software/Devices/Raspberry Pi 3 B+"
-readonly script_backup="$backup_directory/bkup_rpimage/bkup_rpimage.sh"
-readonly script_shrink="$backup_directory/PiShrink/pishrink.sh"
+readonly root_directory="/mnt/eHDD/Software/Devices/Raspberry Pi 3 B+"
+readonly snapshot_directory="$root_directory/Snapshots"
+readonly script_backup="$root_directory/bkup_rpimage/bkup_rpimage.sh"
+readonly script_shrink="$root_directory/PiShrink/pishrink.sh"
+readonly daily_backup_fullfilepath="$root_directory/rpi_backup.img"
 
 readonly debug_mode=
 readonly forced_shrink=
-readonly log_file="$backup_directory/log.txt"
+readonly log_file="$root_directory/log.txt"
 
 
 function log() {
@@ -75,31 +77,58 @@ function byte_to_gigabyte() {
     printf "%d.%02d" $whole_number $fractional_number
 }
 
-readonly daily_backup_fullfilepath="$backup_directory/rpi_backup.img"
-
-SECONDS=0
-[[ -z $debug_mode ]] && sudo bash "$script_backup" start -c "$daily_backup_fullfilepath"
-readonly file_size_in_bytes_daily_backup=$( stat -c%s "$daily_backup_fullfilepath" )
-
-log "Completed the $( byte_to_gigabyte $file_size_in_bytes_daily_backup )GB backup within $( print_elapsed_time ) @ \"$daily_backup_fullfilepath\"."
-
-readonly bimonthly_backup_filename="rpi_backup_$(date +%Y-%m-%d).img"
-readonly bimonthly_backup_directory="$backup_directory/Snapshots"
-readonly bimonthly_backup_full_filepath="$bimonthly_backup_directory/$bimonthly_backup_filename"
-
-if [[ $(date +%d) == "01" || $(date +%d) == "16" || -n "$forced_shrink" ]] \
-    && [[ $( ls -1A "$bimonthly_backup_directory" | grep -c "$bimonthly_backup_filename" 2> /dev/null ) -gt 0 ]]; then
+function do_daily_backup() {
     SECONDS=0
-    [[ -z $debug_mode ]] && sudo bash "$script_shrink" -Z "$daily_backup_fullfilepath" "$bimonthly_backup_full_filepath"
-    readonly file_size_in_bytes_bimonthly_backup=$( stat -c%s "$bimonthly_backup_full_filepath.xz" )
-    log "Created snapshot and shrinked it by $( get_delta $file_size_in_bytes_bimonthly_backup $file_size_in_bytes_daily_backup )% to $( byte_to_gigabyte $file_size_in_bytes_bimonthly_backup )GB within $( print_elapsed_time ): \"$bimonthly_backup_full_filepath.xz\"."
+    [[ -z $debug_mode ]] && sudo bash "$script_backup" start -c "$daily_backup_fullfilepath"
 
-    readonly current_number_of_bimonthly_backups=$( ls -1A "$bimonthly_backup_directory" | grep -c "rpi_backup_" )
-    readonly max_number_of_bimonthly_backups=12
-    if [[ $current_number_of_bimonthly_backups -gt $max_number_of_bimonthly_backups ]]; then
-        readonly oldest_bimonthly_backup_filename=$( ls -1AX "$bimonthly_backup_directory" | head -1 )
-        readonly full_filepath="$bimonthly_backup_directory/$oldest_bimonthly_backup_filename"
-        [[ -z $debug_mode ]] && rm "$full_filepath"
-        log "Removed oldest backup file: \"$full_filepath\""
-	fi
-fi
+    local -r elapsed_time="$( print_elapsed_time )"
+    local file_size="$( stat -c%s "$daily_backup_fullfilepath" )"
+    file_size="$( byte_to_gigabyte "$file_size" )"
+
+    log "Completed the ${file_size}GB backup within $elapsed_time @ \"${daily_backup_fullfilepath}\"."
+}
+
+function create_snapshot() {
+    local snapshot_filename="${daily_backup_fullfilepath%.img}_$(date +%Y-%m-%d).img"
+    local snapshot_fullfilepath="$snapshot_directory/$snapshot_filename"
+
+    if [[ $(date +%d) == "01" || $(date +%d) == "16" || -n "$forced_shrink" ]] \
+        && [[ $( ls -1A "$snapshot_directory" | grep -c "$snapshot_filename" 2> /dev/null ) -eq 0 ]]; then
+        SECONDS=0
+        [[ -z $debug_mode ]] && sudo bash "$script_shrink" -Z "$daily_backup_fullfilepath" "$snapshot_fullfilepath"
+        local -r elapsed_time="$( print_elapsed_time )"
+
+        snapshot_filename="$( ls -1A "$snapshot_directory" | grep "$snapshot_filename" 2> /dev/null )"
+        snapshot_fullfilepath="$snapshot_directory/$snapshot_filename"
+        if [[ -z "$snapshot_filename" || ! -f "$snapshot_fullfilepath" ]]; then
+            log "Failed to create snapshot @ \"${snapshot_fullfilepath}\" based on \"${daily_backup_fullfilepath}\"."
+            exit 1
+        fi
+    
+        local snapshot_filesize="$( stat -c%s "$snapshot_fullfilepath" )"
+        local delta="$( stat -c%s "$daily_backup_fullfilepath" )"
+        delta="$( get_delta "$snapshot_filesize" "$delta" )"
+        snapshot_filesize="$( byte_to_gigabyte "$snapshot_filesize" )"
+
+        log "Created the snapshot and shrank it by ${delta}% to ${snapshot_filesize}GB within ${elapsed_time} @ \"${snapshot_fullfilepath}\"."
+    fi
+}
+
+function truncate_snapshots() {
+    local -r snapshots_count=$( ls -1A "$snapshot_directory" | grep -c "rpi_backup_" )
+    local -r max_snapshots_count="12"
+
+    if [[ $snapshots_count -gt $max_snapshots_count ]]; then
+        local -r snapshots_to_delete_count="$(( snapshots_count - max_snapshots_count ))"
+
+        ls -1AX "$snapshot_directory" | head -$snapshots_to_delete_count | while read item; do
+            local old_snapshot="$snapshot_directory/$item"
+            [[ -z $debug_mode ]] && rm "$old_snapshot"
+            log "Removed old snapshot: \"$old_snapshot\""
+        done
+    fi
+}
+
+do_daily_backup
+create_snapshot
+truncate_snapshots
