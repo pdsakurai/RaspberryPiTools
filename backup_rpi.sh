@@ -7,16 +7,18 @@ readonly script_shrink="$backup_directory/PiShrink/pishrink.sh"
 readonly debug_mode=
 readonly forced_shrink=
 readonly log_file="$backup_directory/log.txt"
-touch "$log_file"
 
-log(){
-    local -r message=$1
-    local -r time_now=$(date "+%Y-%m-%dT%H:%M:%S")
-    if [[ -n $debug_mode ]]; then
-        echo "<$time_now> [DEBUG MODE] $message" >> "$log_file"
-    else
-        echo "<$time_now> $message" >> "$log_file"
-    fi
+
+function log() {
+    local -r tag="backup_rpi.sh[$$]"
+    local text="$( [[ -n "$debug_mode" ]] && printf "!DEBUG MODE! " )${@:?Cannot do empty logging}"
+    local -r time_now="$( date "+%Y-%m-%dT%H:%M:%S.%3N" )"
+    logger -t "$tag" "$text"
+
+    text="<$time_now> $tag: $text\n"
+    [[ -e "$log_file" ]] \
+        && sed -i "1 s|^|$text|" "$log_file" \
+        || printf "$text" > "$log_file"
 }
 
 change_seconds_to_text() {
