@@ -63,7 +63,7 @@ function get_delta() {
     printf "%s%d.%02d" $sign $whole_number $fraction_number
 }
 
-function to_gigabyte() {
+function byte_to_gigabyte() {
     local -r bytes=${1:?Missing: Bytes}
 
     local -r bytes_in_one_gigabyte=$(( 10**9 ))
@@ -83,7 +83,7 @@ SECONDS=0
 readonly duration_backup=$SECONDS
 
 readonly file_size_in_bytes_daily_backup=$( stat -c%s "$daily_backup_full_filepath" )
-log "Completed the $( to_gigabyte $file_size_in_bytes_daily_backup )GB backup within $( change_seconds_to_text $duration_backup ): \"$daily_backup_full_filepath\"."
+log "Completed the $( byte_to_gigabyte $file_size_in_bytes_daily_backup )GB backup within $( change_seconds_to_text $duration_backup ): \"$daily_backup_full_filepath\"."
 
 readonly bimonthly_backup_filename="rpi_backup_$(date +%Y-%m-%d).img"
 readonly bimonthly_backup_directory="$backup_directory/Snapshots"
@@ -95,7 +95,7 @@ if [[ $(date +%d) == "01" || $(date +%d) == "16" || -n "$forced_shrink" ]] && [[
     readonly duration_shrinking_backup=$SECONDS
 
     readonly file_size_in_bytes_bimonthly_backup=$( stat -c%s "$bimonthly_backup_full_filepath.gz" )
-    log "Created snapshot and shrinked it by $( get_delta $file_size_in_bytes_bimonthly_backup $file_size_in_bytes_daily_backup )% to $( to_gigabyte $file_size_in_bytes_bimonthly_backup )GB within $( change_seconds_to_text $duration_shrinking_backup ): \"$bimonthly_backup_full_filepath.gz\"."
+    log "Created snapshot and shrinked it by $( get_delta $file_size_in_bytes_bimonthly_backup $file_size_in_bytes_daily_backup )% to $( byte_to_gigabyte $file_size_in_bytes_bimonthly_backup )GB within $( change_seconds_to_text $duration_shrinking_backup ): \"$bimonthly_backup_full_filepath.gz\"."
 
     readonly current_number_of_bimonthly_backups=$( ls -1 "$bimonthly_backup_directory" | wc -l )
     readonly max_number_of_bimonthly_backups=12
