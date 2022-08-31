@@ -90,7 +90,7 @@ readonly bimonthly_backup_full_filepath="$bimonthly_backup_directory/$bimonthly_
 
 if [[ $(date +%d) == "01" || $(date +%d) == "16" || -n "$forced_shrink" ]] && [[ ! -e $bimonthly_backup_full_filepath ]]; then
     SECONDS=0
-    [[ -z $debug_mode ]] && sudo bash "$script_shrink" -z "$daily_backup_fullfilepath" "$bimonthly_backup_full_filepath"
+    [[ -z $debug_mode ]] && sudo bash "$script_shrink" -Z "$daily_backup_fullfilepath" "$bimonthly_backup_full_filepath"
     readonly duration_shrinking_backup=$SECONDS
 
     readonly file_size_in_bytes_bimonthly_backup=$( stat -c%s "$bimonthly_backup_full_filepath.gz" )
