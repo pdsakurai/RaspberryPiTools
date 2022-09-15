@@ -93,7 +93,7 @@ function create_daily_backup() {
 
 function create_snapshot() {
     local snapshot_filename="${fullfilepath_backup%.*}_$(date +%Y-%m-%d).img"
-    local snapshot_fullfilepath="$directory_snapshot/$snapshot_filename"
+    local snapshot_fullfilepath="$directory_snapshot/${snapshot_filename##*/}"
 
     if [[ $(date +%d) == "01" || $(date +%d) == "16" || -n "$forced_shrink" ]] \
         && [[ $( ls -1A "$directory_snapshot" | grep -c "$snapshot_filename" 2> /dev/null ) -eq 0 ]]; then
