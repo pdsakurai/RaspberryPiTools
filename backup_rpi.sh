@@ -98,7 +98,7 @@ function create_snapshot() {
     if [[ $(date +%d) == "01" || $(date +%d) == "16" || -n "$forced_shrink" ]] \
         && [[ $( ls -1A "$directory_snapshot" | grep -c "$snapshot_filename" 2> /dev/null ) -eq 0 ]]; then
         SECONDS=0
-        [[ -z $debug_mode ]] && sudo bash "$script_shrink" -Z "$fullfilepath_backup" "$snapshot_fullfilepath"
+        [[ -z $debug_mode ]] && sudo bash "$script_shrink" -aZ "$fullfilepath_backup" "$snapshot_fullfilepath"
         local -r elapsed_time="$( print_elapsed_time )"
 
         snapshot_filename="$( ls -1A "$directory_snapshot" | grep "$snapshot_filename" 2> /dev/null )"
