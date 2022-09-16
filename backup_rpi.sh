@@ -101,7 +101,7 @@ function create_snapshot() {
         [[ -z $debug_mode ]] && sudo bash "$script_shrink" -aZ "$fullfilepath_backup" "$snapshot_fullfilepath"
         local -r elapsed_time="$( print_elapsed_time )"
 
-        snapshot_filename="$( ls -1A "$directory_snapshot" | grep "$snapshot_filename" 2> /dev/null )"
+        snapshot_filename="$( ls -1A "$directory_snapshot" | grep "${snapshot_filename##*/}" 2> /dev/null )"
         snapshot_fullfilepath="$directory_snapshot/$snapshot_filename"
         if [[ -z "$snapshot_filename" || ! -f "$snapshot_fullfilepath" ]]; then
             log "Failed to create a snapshot @ \"${snapshot_fullfilepath}\" based on \"${fullfilepath_backup}\"."
