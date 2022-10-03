@@ -71,17 +71,27 @@ function process_tvshow(){
     local -r torrent_path="${1%/}"
     local -r destination="${2:?Missing: Destination}"
 
+    if [[ -f "$torrent_path" ]]; then
     : 'Expected structure #1:
-    TV.Show.2022.S01E01.Title.of.episode.720p.+*HEVC-PSA.mkv'
-    if [[ -f "$torrent_path" ]] && [[ "$torrent_path" ~= .mkv$ ]]; then
-        local -r file_name_cleaned="$( clean_text_using_sed "${torrent_path##*/}" )"
-        local -r base_directory="$( get_base_directory "$torrent_path" )"
-        local -r file_extension="$( get_file_extension "$torrent_path" )"
-        local -r tv_show_title="$( printf "$file_name_cleaned" | sed "s/.S[0-9]\+E[0-9]\+.*//" )"
-        rename "$torrent_path" "$file_name_cleaned"
-        move "$base_directory$file_name_cleaned$file_extension" "$destination/$tv_show_title"
+    TV.Show.2022.S01E01.Title.of.episode.720p.+*HEVC-PSA.rar'
+        if [[ "$torrent_path" ~= .rar$ ]]; then
+            7z e "$torrent_path" &> /dev/null
+            rm "$torrent_path"
+            local -r torrent_filename="${torrent_path##*/}"
+            process_tvshow "$(pwd)/${torrent_filename%.rar}.mkv" "$destination"
 
     : 'Expected structure #2:
+    TV.Show.2022.S01E01.Title.of.episode.720p.+*HEVC-PSA.mkv'
+        elif [[ "$torrent_path" ~= .mkv$ ]]; then
+            local -r file_name_cleaned="$( clean_text_using_sed "${torrent_path##*/}" )"
+            local -r base_directory="$( get_base_directory "$torrent_path" )"
+            local -r file_extension="$( get_file_extension "$torrent_path" )"
+            local -r tv_show_title="$( printf "$file_name_cleaned" | sed "s/.S[0-9]\+E[0-9]\+.*//" )"
+            rename "$torrent_path" "$file_name_cleaned"
+            move "$base_directory$file_name_cleaned$file_extension" "$destination/$tv_show_title"
+        fi
+
+    : 'Expected structure #3:
     Folder: TV.Show.2022.SEASON.01.S01.COMPLETE.720p.+HEVC-PSA
     Inside it:
         TV.Show.2022.S01E01.Title.of.episode.720p.+*HEVC-PSA.mkv
