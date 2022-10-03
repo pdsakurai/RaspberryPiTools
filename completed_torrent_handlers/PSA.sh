@@ -78,7 +78,7 @@ function process_tvshow(){
     TV.Show.2022.S01E01.Title.of.episode.720p.+*HEVC-PSA.rar'
         if [[ "$torrent_path" =~ .rar$ ]]; then
             7z e "$torrent_path" &> /dev/null
-            rm "$torrent_path"
+            delete "$torrent_path"
             local -r torrent_filename="${torrent_path##*/}"
             process_tvshow "$(pwd)/${torrent_filename%.rar}.mkv" "$destination"
 
