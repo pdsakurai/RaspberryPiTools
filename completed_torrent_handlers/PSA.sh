@@ -76,7 +76,7 @@ function process_tvshow(){
     if [[ -f "$torrent_path" ]]; then
     : 'Expected structure #1:
     TV.Show.2022.S01E01.Title.of.episode.720p.+*HEVC-PSA.rar'
-        if [[ "$torrent_path" ~= .rar$ ]]; then
+        if [[ "$torrent_path" =~ .rar$ ]]; then
             7z e "$torrent_path" &> /dev/null
             rm "$torrent_path"
             local -r torrent_filename="${torrent_path##*/}"
@@ -84,7 +84,7 @@ function process_tvshow(){
 
     : 'Expected structure #2:
     TV.Show.2022.S01E01.Title.of.episode.720p.+*HEVC-PSA.mkv'
-        elif [[ "$torrent_path" ~= .mkv$ ]]; then
+        elif [[ "$torrent_path" =~ .mkv$ ]]; then
             local -r file_name_cleaned="$( clean_text_using_sed "${torrent_path##*/}" )"
             local -r base_directory="$( get_base_directory "$torrent_path" )"
             local -r file_extension="$( get_file_extension "$torrent_path" )"
