@@ -72,15 +72,16 @@ function process_movie() {
 function process_tvshow(){
     local -r torrent_path="${1%/}"
     local -r destination="${2:?Missing: Destination}"
+    local has_processed_tvshow=1
 
     if [[ -f "$torrent_path" ]]; then
     : 'Expected structure #1:
     TV.Show.2022.S01E01.Title.of.episode.720p.+*HEVC-PSA.rar'
         if [[ "$torrent_path" =~ .rar$ ]]; then
             7z e "$torrent_path" &> /dev/null
-            delete "$torrent_path"
             local -r torrent_filename="${torrent_path##*/}"
-            process_tvshow "$(pwd)/${torrent_filename%.rar}.mkv" "$destination"
+            process_tvshow "$(pwd)/${torrent_filename%.rar}.mkv" "$destination" \
+                && delete "$torrent_path"
 
     : 'Expected structure #2:
     TV.Show.2022.S01E01.Title.of.episode.720p.+*HEVC-PSA.mkv'
@@ -91,6 +92,7 @@ function process_tvshow(){
             local -r tv_show_title="$( printf "$file_name_cleaned" | sed "s/.S[0-9]\+E[0-9]\+.*//" )"
             rename "$torrent_path" "$file_name_cleaned"
             move "$base_directory$file_name_cleaned$file_extension" "$destination/$tv_show_title"
+            has_processed_tvshow=0
         fi
 
     : 'Expected structure #3:
@@ -102,14 +104,14 @@ function process_tvshow(){
         local -r tv_show_title="$( printf "${torrent_path##*/}" | sed "s/\.SEASON\..\+//" )"
 
         local file_name
-        local has_processed_tvshow
         while read file_name; do
             if [[ -f "$torrent_path/$file_name" ]] && [[ "$file_name" =~ ^$tv_show_title ]]; then 
                 process_tvshow "$torrent_path/$file_name" "$destination"
-                has_processed_tvshow="true"
+                has_processed_tvshow=0
             fi
         done <<< $( ls -1A "$torrent_path" )
-        
         [[ -n "$has_processed_tvshow" ]] && delete "$torrent_path"
     fi
+
+    return $has_processed_tvshow
 }
