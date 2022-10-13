@@ -28,19 +28,22 @@ function clean_text_using_sed() {
     Line 1 - removal of tags text, starting from resolution tag going to the right
     Line 2 - enclosing of year released with pair of parentheses
     Line 3 - changing dot separator to whitespace
-    Line 4 - removal of alternative title prior "A K A " keyword followed by year indicator'
+    Line 4 - removal of alternative title prior "A K A " keyword followed by year indicator
+    Lines 5-6 - Trim whitespaces at the edges'
     local -r common_sed_options_sequence=( \
         "s/.\(216\|108\|72\)0p.*$//" \
         "s/(\?\([0-9]\{4\}\))\?\(.*$\)/\(\1)\2/" \
         "s/\./ /g" \
-        "s/A K A .*\(([0-9]\{4\})\)/\1/" )
+        "s/A K A .*\(([0-9]\{4\})\)/\1/" \
+        "s/[[:space:]]*$//" \
+        "s/^[[:space:]]*//" )
 
     local sed_option
     for sed_option in "${common_sed_options_sequence[@]}" "${custom_sed_options_sequence[@]}"; do
         text="$( printf "$text" | sed "$sed_option" )"
     done
 
-    printf "$text" | xargs
+    printf "$text"
 }
 
 function process_movie() {
