@@ -29,13 +29,14 @@ def generate_zone_file_header(source):
     yield f"         {time_to_['expire NXDOMAIN cache']} )\n"
     yield f" NS localhost.\n\n"
 
-arg_parser = ArgumentParser()
-arg_parser.add_argument("-s", "--source_url", required=True, type=str)
-arg_parser.add_argument("-d", "--destination_file", required=True, type=str)
-args = arg_parser.parse_args()
+def get_arguments():
+    arg_parser = ArgumentParser()
+    arg_parser.add_argument("-s", "--source_url", required=True, type=str)
+    arg_parser.add_argument("-d", "--destination_file", required=True, type=str)
+    args = arg_parser.parse_args()
+    return (args.source_url, args.destination_file)
 
-source_url=args.source_url
-destination_file=args.destination_file
+source_url, destination_file=get_arguments()
 
 with request.urlopen(source_url) as src_file:
     with tempfile.TemporaryDirectory() as temp_dir:
