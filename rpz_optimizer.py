@@ -52,12 +52,13 @@ def get_arguments():
     args = arg_parser.parse_args()
     return (args.source_url, args.destination_file)
 
-source_url, destination_file=get_arguments()
-with tempfile.TemporaryDirectory() as temp_dir:
-    temp_file_fd, temp_file_path = tempfile.mkstemp(text=True, dir=temp_dir)
-    with os.fdopen(temp_file_fd, mode="w") as temp_file:
-        temp_file.writelines(ZoneFile(source_url).generate())
-    shutil.move(temp_file_path, destination_file)
+if __name__ == "__main__":
+    source_url, destination_file=get_arguments()
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_file_fd, temp_file_path = tempfile.mkstemp(text=True, dir=temp_dir)
+        with os.fdopen(temp_file_fd, mode="w") as temp_file:
+            temp_file.writelines(ZoneFile(source_url).generate())
+        shutil.move(temp_file_path, destination_file)
 
 # def get_domain_name():
 #     regex = re.compile(r"^(?P<domain>(?=\w|\*\.).+)(\s+CNAME\s+\.)", re.IGNORECASE)
