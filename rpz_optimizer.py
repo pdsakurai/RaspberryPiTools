@@ -36,23 +36,20 @@ def get_arguments():
     args = arg_parser.parse_args()
     return (args.source_url, args.destination_file)
 
+def generate_zone_file(source_url):
+    yield from generate_zone_file_header(source_url)
+    with request.urlopen(source_url) as src_file:
+        regex = re.compile(r"^\w")
+        is_valid_rpz_trigger_rule = lambda entry : regex.match(entry)
+        decoded_lines = (line_in_binary.decode() for line_in_binary in src_file)
+        yield from (line for line in decoded_lines if is_valid_rpz_trigger_rule(line))
+
 source_url, destination_file=get_arguments()
-
-with request.urlopen(source_url) as src_file:
-    with tempfile.TemporaryDirectory() as temp_dir:
-        
-        temp_file_fd, temp_file_path = tempfile.mkstemp(text=True, dir=temp_dir)
-        with os.fdopen(temp_file_fd, mode="w") as temp_file:
-            temp_file.writelines(generate_zone_file_header(source_url))
-
-            decoded_lines = (line_in_binary.decode() for line_in_binary in src_file)
-            def is_valid_rpz_trigger_rule():
-                regex = re.compile(r"^\w")
-                return lambda entry : regex.match(entry)
-            is_valid_rpz_trigger_rule = is_valid_rpz_trigger_rule()
-            temp_file.writelines(line for line in decoded_lines if is_valid_rpz_trigger_rule(line))
-
-        shutil.move(temp_file_path, destination_file)
+with tempfile.TemporaryDirectory() as temp_dir:
+    temp_file_fd, temp_file_path = tempfile.mkstemp(text=True, dir=temp_dir)
+    with os.fdopen(temp_file_fd, mode="w") as temp_file:
+        temp_file.writelines(generate_zone_file(source_url))
+    shutil.move(temp_file_path, destination_file)
 
 # def get_domain_name():
 #     regex = re.compile(r"^(?P<domain>(?=\w|\*\.).+)(\s+CNAME\s+\.)", re.IGNORECASE)
