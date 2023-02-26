@@ -8,8 +8,10 @@ import shutil
 
 
 class ZoneFile:
-    def __init__(self, source_url):
+    def __init__(self, source_url, primary_name_server, hostmaster_email_address):
         self.source_url = source_url
+        self.primary_name_server = primary_name_server
+        self.hostmaster_email_address = hostmaster_email_address.replace("@", "/.")
 
     def _generate_header(self):
         yield f"; Source: {self.source_url}\n"
@@ -26,7 +28,7 @@ class ZoneFile:
         }
 
         yield f"$TTL {time_to_['expire SOA']}\n"
-        yield f"@ IN SOA storage.capri. pdsakurai/.gmail.com. (\n"
+        yield f"@ IN SOA {self.primary_name_server}. {self.hostmaster_email_address}. (\n"
         yield f"         {today.strftime('%y%m%d%H%M')}\n"
         yield f"         {time_to_['refresh']}\n"
         yield f"         {time_to_['retry']}\n"
@@ -52,16 +54,18 @@ def get_arguments():
     arg_parser = ArgumentParser()
     arg_parser.add_argument("-s", "--source_url", required=True, type=str)
     arg_parser.add_argument("-d", "--destination_file", required=True, type=str)
+    arg_parser.add_argument("-n", "--name_server", required=True, type=str)
+    arg_parser.add_argument("-e", "--email_address", required=True, type=str)
     args = arg_parser.parse_args()
-    return (args.source_url, args.destination_file)
+    return (args.source_url, args.destination_file, args.name_server, args.email_address)
 
 
 if __name__ == "__main__":
-    source_url, destination_file = get_arguments()
+    source_url, destination_file, name_server, email_address = get_arguments()
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file_fd, temp_file_path = tempfile.mkstemp(text=True, dir=temp_dir)
         with os.fdopen(temp_file_fd, mode="w") as temp_file:
-            temp_file.writelines(ZoneFile(source_url).generate())
+            temp_file.writelines(ZoneFile(source_url, name_server, email_address).generate())
         shutil.move(temp_file_path, destination_file)
 
 # def get_domain_name():
