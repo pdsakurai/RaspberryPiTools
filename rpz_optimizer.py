@@ -30,12 +30,12 @@ def generate_zone_file_header(source):
     yield f" NS localhost.\n\n"
 
 arg_parser = ArgumentParser()
-arg_parser.add_argument("-s", "--source_url", nargs=1, required=True, type=str)
-arg_parser.add_argument("-d", "--destination_file", nargs=1, required=True, type=str)
+arg_parser.add_argument("-s", "--source_url", required=True, type=str)
+arg_parser.add_argument("-d", "--destination_file", required=True, type=str)
 args = arg_parser.parse_args()
 
-source_url=args.source_url[0]
-destination_file=args.destination_file[0]
+source_url=args.source_url
+destination_file=args.destination_file
 
 with request.urlopen(source_url) as src_file:
     with tempfile.TemporaryDirectory() as temp_dir:
