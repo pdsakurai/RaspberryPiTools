@@ -57,7 +57,12 @@ def get_arguments():
     arg_parser.add_argument("-n", "--name_server", required=True, type=str)
     arg_parser.add_argument("-e", "--email_address", required=True, type=str)
     args = arg_parser.parse_args()
-    return (args.source_url, args.destination_file, args.name_server, args.email_address)
+    return (
+        args.source_url,
+        args.destination_file,
+        args.name_server,
+        args.email_address,
+    )
 
 
 if __name__ == "__main__":
@@ -65,7 +70,9 @@ if __name__ == "__main__":
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file_fd, temp_file_path = tempfile.mkstemp(text=True, dir=temp_dir)
         with os.fdopen(temp_file_fd, mode="w") as temp_file:
-            temp_file.writelines(ZoneFile(source_url, name_server, email_address).generate())
+            temp_file.writelines(
+                ZoneFile(source_url, name_server, email_address).generate()
+            )
         shutil.move(temp_file_path, destination_file)
 
 # def get_domain_name():
