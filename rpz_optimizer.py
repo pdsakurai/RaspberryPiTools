@@ -6,11 +6,11 @@ import tempfile
 import os
 import shutil
 
-class ZoneFile:
 
+class ZoneFile:
     def __init__(self, source_url):
         self.source_url = source_url
-    
+
     def _generate_header(self):
         yield f"; Source: {self.source_url}\n"
 
@@ -18,9 +18,9 @@ class ZoneFile:
         yield f"; Last modified: {today.isoformat()}\n\n"
 
         time_to_ = {
-            "refresh" : int(timedelta(days=1).total_seconds()),
-            "retry" : int(timedelta(minutes=1).total_seconds()),
-            "expire" : int(timedelta(days=30).total_seconds()),
+            "refresh": int(timedelta(days=1).total_seconds()),
+            "retry": int(timedelta(minutes=1).total_seconds()),
+            "expire": int(timedelta(days=30).total_seconds()),
             "expire NXDOMAIN cache": int(timedelta(seconds=30).total_seconds()),
             "expire SOA": int(timedelta(hours=1).total_seconds()),
         }
@@ -37,13 +37,16 @@ class ZoneFile:
     def _generate_rpz_rules(self):
         with request.urlopen(self.source_url) as src_file:
             regex = re.compile(r"^\w")
-            is_valid_rpz_trigger_rule = lambda entry : regex.match(entry)
+            is_valid_rpz_trigger_rule = lambda entry: regex.match(entry)
             decoded_lines = (line_in_binary.decode() for line_in_binary in src_file)
-            yield from (line for line in decoded_lines if is_valid_rpz_trigger_rule(line))
+            yield from (
+                line for line in decoded_lines if is_valid_rpz_trigger_rule(line)
+            )
 
     def generate(self):
         yield from self._generate_header()
         yield from self._generate_rpz_rules()
+
 
 def get_arguments():
     arg_parser = ArgumentParser()
@@ -52,8 +55,9 @@ def get_arguments():
     args = arg_parser.parse_args()
     return (args.source_url, args.destination_file)
 
+
 if __name__ == "__main__":
-    source_url, destination_file=get_arguments()
+    source_url, destination_file = get_arguments()
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file_fd, temp_file_path = tempfile.mkstemp(text=True, dir=temp_dir)
         with os.fdopen(temp_file_fd, mode="w") as temp_file:
