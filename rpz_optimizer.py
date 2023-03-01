@@ -17,7 +17,7 @@ class ZoneFile:
     ):
         self.source_url = source_url
         self.primary_name_server = primary_name_server
-        self.hostmaster_email_address = hostmaster_email_address.replace("@", "/.")
+        self.hostmaster_email_address = hostmaster_email_address.replace(".", "/.").replace("@", ".")
         self.wildcards_only = wildcards_only
 
     def _generate_header(self):
