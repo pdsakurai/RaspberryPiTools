@@ -7,6 +7,7 @@ import os
 import shutil
 import typing
 
+
 def get_arguments():
     arg_parser = ArgumentParser()
     arg_parser.add_argument("-s", "--source_url", required=True, type=str)
@@ -23,7 +24,10 @@ def get_arguments():
         args.wildcards_only,
     )
 
-def header_generator(source_url : str, primary_name_server : str, hostmaster_email_address : str):
+
+def header_generator(
+    source_url: str, primary_name_server: str, hostmaster_email_address: str
+):
     yield f"; Source: {source_url}"
 
     today = datetime.now(timezone(timedelta(hours=8))).replace(microsecond=0)
@@ -40,8 +44,10 @@ def header_generator(source_url : str, primary_name_server : str, hostmaster_ema
     yield ""
 
     yield f"$TTL {time_to_['expire SOA']}"
-    
-    hostmaster_email_address = hostmaster_email_address.replace(".", "/.").replace("@", ".")
+
+    hostmaster_email_address = hostmaster_email_address.replace(".", "/.").replace(
+        "@", "."
+    )
     yield f"@ IN SOA {primary_name_server}. {hostmaster_email_address}. ("
     yield f"         {today.strftime('%y%m%d%H%M')}"
     yield f"         {time_to_['refresh']}"
@@ -52,41 +58,46 @@ def header_generator(source_url : str, primary_name_server : str, hostmaster_ema
 
     yield ""
 
-def downloader(source_url : str, next_cb : typing.Coroutine):
+
+def downloader(source_url: str, next_cb: typing.Coroutine):
     with request.urlopen(source_url) as src_file:
         for line in src_file:
             next_cb.send(line.decode())
         next_cb.close()
 
-def filter(wildcards_only : bool, next_cb : typing.Coroutine):
+
+def filter(wildcards_only: bool, next_cb: typing.Coroutine):
     regex = re.compile(r"^\*\.") if wildcards_only else re.compile(r"^\w")
     is_valid_rpz_trigger_rule = lambda entry: regex.match(entry)
     try:
         while True:
-            line = (yield)
+            line = yield
             if is_valid_rpz_trigger_rule(line):
                 next_cb.send(line)
     except GeneratorExit:
         next_cb.close()
 
-def linter(next_cb : typing.Coroutine):
+
+def linter(next_cb: typing.Coroutine):
     try:
         while True:
-            line = (yield)
+            line = yield
             next_cb.send(line.replace("\n", "").lstrip())
     except GeneratorExit:
         next_cb.close()
 
-def writer(destination_file : str):
+
+def writer(destination_file: str):
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file_fd, temp_file_path = tempfile.mkstemp(text=True, dir=temp_dir)
         with os.fdopen(temp_file_fd, mode="w") as temp_file:
             try:
                 while True:
-                    line = (yield)
+                    line = yield
                     temp_file.write(f"{line}\n")
             except GeneratorExit:
                 shutil.move(temp_file_path, destination_file)
+
 
 if __name__ == "__main__":
     (
@@ -99,14 +110,14 @@ if __name__ == "__main__":
 
     writer_ = writer(destination_file)
     next(writer_)
-    linter_ = linter(writer_)
+    linter_ = linter(next_cb=writer_)
     next(linter_)
     filter_ = filter(wildcards_only, next_cb=linter_)
     next(filter_)
 
     for line in header_generator(source_url, name_server, email_address):
         writer_.send(line)
-    downloader(source_url, filter_)
+    downloader(source_url, next_cb=filter_)
 
 
 # def get_domain_name():
