@@ -5,57 +5,7 @@ from argparse import ArgumentParser
 import tempfile
 import os
 import shutil
-
-
-class ZoneFile:
-    def __init__(
-        self,
-        source_url,
-        primary_name_server,
-        hostmaster_email_address,
-        wildcards_only=False,
-    ):
-        self.source_url = source_url
-        self.primary_name_server = primary_name_server
-        self.hostmaster_email_address = hostmaster_email_address.replace(".", "/.").replace("@", ".")
-        self.wildcards_only = wildcards_only
-
-    def _generate_header(self):
-        yield f"; Source: {self.source_url}\n"
-
-        today = datetime.now(timezone(timedelta(hours=8))).replace(microsecond=0)
-        yield f"; Last modified: {today.isoformat()}\n\n"
-
-        time_to_ = {
-            "expire SOA": int(timedelta(hours=1).total_seconds()),
-            "refresh": int(timedelta(days=1).total_seconds()),
-            "retry": int(timedelta(minutes=1).total_seconds()),
-            "expire": int(timedelta(days=30).total_seconds()),
-            "expire NXDOMAIN cache": int(timedelta(seconds=30).total_seconds()),
-        }
-
-        yield f"$TTL {time_to_['expire SOA']}\n"
-        yield f"@ IN SOA {self.primary_name_server}. {self.hostmaster_email_address}. (\n"
-        yield f"         {today.strftime('%y%m%d%H%M')}\n"
-        yield f"         {time_to_['refresh']}\n"
-        yield f"         {time_to_['retry']}\n"
-        yield f"         {time_to_['expire']}\n"
-        yield f"         {time_to_['expire NXDOMAIN cache']} )\n"
-        yield f" NS localhost.\n\n"
-
-    def _generate_rpz_rules(self):
-        with request.urlopen(self.source_url) as src_file:
-            regex = re.compile(r"^\*\.") if wildcards_only else re.compile(r"^\w")
-            is_valid_rpz_trigger_rule = lambda entry: regex.match(entry)
-            decoded_lines = (line_in_binary.decode() for line_in_binary in src_file)
-            yield from (
-                line for line in decoded_lines if is_valid_rpz_trigger_rule(line)
-            )
-
-    def generate(self):
-        yield from self._generate_header()
-        yield from self._generate_rpz_rules()
-
+import typing
 
 def get_arguments():
     arg_parser = ArgumentParser()
@@ -73,6 +23,71 @@ def get_arguments():
         args.wildcards_only,
     )
 
+def header_generator(source_url : str, primary_name_server : str, hostmaster_email_address : str):
+    yield f"; Source: {source_url}"
+
+    today = datetime.now(timezone(timedelta(hours=8))).replace(microsecond=0)
+    yield f"; Last modified: {today.isoformat()}"
+
+    time_to_ = {
+        "expire SOA": int(timedelta(hours=1).total_seconds()),
+        "refresh": int(timedelta(days=1).total_seconds()),
+        "retry": int(timedelta(minutes=1).total_seconds()),
+        "expire": int(timedelta(days=30).total_seconds()),
+        "expire NXDOMAIN cache": int(timedelta(seconds=30).total_seconds()),
+    }
+
+    yield ""
+
+    yield f"$TTL {time_to_['expire SOA']}"
+    
+    hostmaster_email_address = hostmaster_email_address.replace(".", "/.").replace("@", ".")
+    yield f"@ IN SOA {primary_name_server}. {hostmaster_email_address}. ("
+    yield f"         {today.strftime('%y%m%d%H%M')}"
+    yield f"         {time_to_['refresh']}"
+    yield f"         {time_to_['retry']}"
+    yield f"         {time_to_['expire']}"
+    yield f"         {time_to_['expire NXDOMAIN cache']} )"
+    yield f" NS localhost."
+
+    yield ""
+
+def downloader(source_url : str, next_cb : typing.Coroutine):
+    with request.urlopen(source_url) as src_file:
+        for line in src_file:
+            next_cb.send(line.decode())
+        next_cb.close()
+
+def filter(wildcards_only : bool, next_cb : typing.Coroutine):
+    regex = re.compile(r"^\*\.") if wildcards_only else re.compile(r"^\w")
+    is_valid_rpz_trigger_rule = lambda entry: regex.match(entry)
+    try:
+        while True:
+            line = (yield)
+            if is_valid_rpz_trigger_rule(line):
+                next_cb.send(line)
+    except GeneratorExit:
+        next_cb.close()
+
+def linter(next_cb : typing.Coroutine):
+    try:
+        while True:
+            line = (yield)
+            next_cb.send(line.replace("\n", ""))
+    except GeneratorExit:
+        next_cb.close()
+
+
+def writer(destination_file : str):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_file_fd, temp_file_path = tempfile.mkstemp(text=True, dir=temp_dir)
+        with os.fdopen(temp_file_fd, mode="w") as temp_file:
+            try:
+                while True:
+                    line = (yield)
+                    temp_file.write(f"{line}\n")
+            except GeneratorExit:
+                shutil.move(temp_file_path, destination_file)
 
 if __name__ == "__main__":
     (
@@ -82,13 +97,18 @@ if __name__ == "__main__":
         email_address,
         wildcards_only,
     ) = get_arguments()
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_file_fd, temp_file_path = tempfile.mkstemp(text=True, dir=temp_dir)
-        with os.fdopen(temp_file_fd, mode="w") as temp_file:
-            temp_file.writelines(
-                ZoneFile(source_url, name_server, email_address).generate()
-            )
-        shutil.move(temp_file_path, destination_file)
+
+    writer_ = writer(destination_file)
+    next(writer_)
+    linter_ = linter(writer_)
+    next(linter_)
+    filter_ = filter(wildcards_only, next_cb=linter_)
+    next(filter_)
+
+    for line in header_generator(source_url, name_server, email_address):
+        writer_.send(line)
+    downloader(source_url, filter_)
+
 
 # def get_domain_name():
 #     regex = re.compile(r"^(?P<domain>(?=\w|\*\.).+)(\s+CNAME\s+\.)", re.IGNORECASE)
