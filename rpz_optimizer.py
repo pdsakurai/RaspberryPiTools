@@ -73,10 +73,9 @@ def linter(next_cb : typing.Coroutine):
     try:
         while True:
             line = (yield)
-            next_cb.send(line.replace("\n", ""))
+            next_cb.send(line.replace("\n", "").lstrip())
     except GeneratorExit:
         next_cb.close()
-
 
 def writer(destination_file : str):
     with tempfile.TemporaryDirectory() as temp_dir:
