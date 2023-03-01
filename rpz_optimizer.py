@@ -27,11 +27,11 @@ class ZoneFile:
         yield f"; Last modified: {today.isoformat()}\n\n"
 
         time_to_ = {
+            "expire SOA": int(timedelta(hours=1).total_seconds()),
             "refresh": int(timedelta(days=1).total_seconds()),
             "retry": int(timedelta(minutes=1).total_seconds()),
             "expire": int(timedelta(days=30).total_seconds()),
             "expire NXDOMAIN cache": int(timedelta(seconds=30).total_seconds()),
-            "expire SOA": int(timedelta(hours=1).total_seconds()),
         }
 
         yield f"$TTL {time_to_['expire SOA']}\n"
