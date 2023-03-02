@@ -83,7 +83,6 @@ def extract_domain_name(type_flag: str, next_coro: typing.Coroutine) -> typing.C
             )
         raise Exception("Invalid type_flag")
 
-    print(f"Extracting domain names using this format: {type_flag}")
     domain_name_pattern = create_domain_name_pattern()
     domain_names_extracted = 0
     try:
@@ -128,7 +127,6 @@ def hasher(
 
 
 def rpz_entry_formatter(next_coro: typing.Coroutine) -> typing.Coroutine:
-    print("Formatting domain names to NX RPZ-compliant style: <domain name> CNAME .")
     while True:
         next_coro.send(f"{(yield)} CNAME .")
 
@@ -187,9 +185,9 @@ if __name__ == "__main__":
     unique_filter = unique_filter(next_coro=hasher)
     extract_domain_name = extract_domain_name(flag_type, next_coro=unique_filter)
 
-    def downloader(url):
-        print(f"Downloading and processing file at: {url}")
+    def downloader(url,type):
         with request.urlopen(url) as src_file:
+            print(f"Processing {type}-formatted file at: {url}")
             yield
             for line in src_file:
                 extract_domain_name.send(line.decode())
@@ -203,7 +201,7 @@ if __name__ == "__main__":
         ):
             writer.send(line)
 
-        downloaders = deque([downloader(flag_source_url)])
+        downloaders = deque([downloader(flag_source_url, flag_type)])
 
         while downloaders:
             try:
