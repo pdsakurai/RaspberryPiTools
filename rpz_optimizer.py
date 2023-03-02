@@ -105,7 +105,7 @@ def extract_domain_name(
                 next_coro.send(matches["domain_name"])
     finally:
         print(
-            f"Domain names extracted from {type_flag}-formatted source: {domain_names_extracted}"
+            f'Domain names extracted from "{type_flag}"-formatted source: {domain_names_extracted:,}'
         )
 
 
@@ -121,7 +121,7 @@ def unique_filter(next_coro: typing.Coroutine) -> typing.Coroutine:
             else:
                 duplicates_count += 1
     finally:
-        print(f"Duplicates filtered out: {duplicates_count}")
+        print(f"Duplicates filtered out: {duplicates_count:,}")
 
 
 def hasher(
@@ -131,11 +131,11 @@ def hasher(
     try:
         while True:
             line = yield
-            hash.update(bytearray(line, "utf-8"))
+            hash.update(line.encode("utf-8"))
             next_coro.send(line)
     finally:
         hash = f"md5: {hash.hexdigest()}"
-        print(hash)
+        print(f"RPZ entries' {hash}")
         writer_coro.send("")
         writer_coro.send(f"; {hash}")
 
@@ -147,10 +147,10 @@ def rpz_entry_formatter(next_coro: typing.Coroutine) -> typing.Coroutine:
             next_coro.send(f"{(yield)} CNAME .")
             formatted_counts += 1
     finally:
-        print(f"RPZ-formatted entries: {formatted_counts}")
+        print(f"RPZ-formatted entries: {formatted_counts:,}")
 
 
-def writer(destination_file: str):
+def writer(destination_file: str) -> typing.Coroutine:
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file_fd, temp_file_path = tempfile.mkstemp(dir=temp_dir)
         print(f"Temporary file created: {temp_file_path}")
@@ -174,6 +174,8 @@ def writer(destination_file: str):
             if get_md5(destination_file) != get_md5(temp_file_path):
                 shutil.move(temp_file_path, destination_file)
                 print(f"Temporary file moved to: {destination_file}")
+            else:
+                print("Nothing changed; Deleting created temporary file")
 
 
 class PipedCoroutines:
@@ -189,14 +191,14 @@ class PipedCoroutines:
             i.close()
 
 
-def downloader(url, type, extractor):
+def downloader(url: str, type: str, extractor: typing.Coroutine) -> None:
     try:
         with request.urlopen(url) as src_file:
-            print(f'Processing "{type}"-formatted file at: {url}')
-            yield
+            print(f'Processing "{type}"-formatted source: {url}')
+            (yield)
             for line in src_file:
                 extractor.send(line.decode())
-                yield
+                (yield)
             print(f"Done processing: {url}")
     except request.URLError:
         print(f'Cannot process "{type}"-formatted source: {url}')
@@ -204,33 +206,31 @@ def downloader(url, type, extractor):
 
 if __name__ == "__main__":
     (
-        flag_source_url,
-        flag_destination_file,
-        flag_name_server,
-        flag_email_address,
-        flag_type,
+        source_urls,
+        destination_file,
+        name_server,
+        email_address,
+        source_types,
     ) = get_arguments()
 
-    writer = writer(flag_destination_file)
+    writer = writer(destination_file)
     rpz_entry_formatter = rpz_entry_formatter(next_coro=writer)
     hasher = hasher(writer_coro=writer, next_coro=rpz_entry_formatter)
     unique_filter = unique_filter(next_coro=hasher)
     extractors = dict(
-        (x, extract_domain_name(x, next_coro=unique_filter)) for x in set(flag_type)
+        (x, extract_domain_name(x, next_coro=unique_filter)) for x in set(source_types)
     )
 
     with PipedCoroutines(
         *extractors.values(), unique_filter, hasher, rpz_entry_formatter, writer
     ):
-        for line in header_generator(
-            flag_source_url, flag_name_server, flag_email_address
-        ):
+        for line in header_generator(source_urls, name_server, email_address):
             writer.send(line)
 
         downloaders = deque(
             [
                 downloader(source, type, extractors[type])
-                for (source, type) in zip(flag_source_url, flag_type)
+                for (source, type) in zip(source_urls, source_types)
             ]
         )
 
