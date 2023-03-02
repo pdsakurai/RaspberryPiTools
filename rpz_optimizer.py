@@ -197,12 +197,16 @@ if __name__ == "__main__":
     extractors = dict((x, extract_domain_name(x, next_coro=unique_filter)) for x in set(flag_type) )
 
     def downloader(url, type, extractor):
-        with request.urlopen(url) as src_file:
-            print(f"Processing {type}-formatted file at: {url}")
-            yield
-            for line in src_file:
-                extractor.send(line.decode())
+        try:
+            with request.urlopen(url) as src_file:
+                print(f"Processing \"{type}\"-formatted file at: {url}")
                 yield
+                for line in src_file:
+                    extractor.send(line.decode())
+                    yield
+        except request.URLError:
+            print(f"Cannot process \"{type}\"-formatted source: {url}")
+            
 
     with PipedCoroutines(
         *extractors.values(), unique_filter, hasher, rpz_entry_formatter, writer
