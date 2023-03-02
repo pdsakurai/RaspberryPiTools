@@ -90,7 +90,7 @@ def extract_domain_name(type_flag: str, next_cb: typing.Coroutine) -> typing.Cor
             if matches:
                 domain_names_extracted += 1
                 next_cb.send(matches["domain_name"])
-    except GeneratorExit:
+    finally:
         print(f"Domain names extracted: {domain_names_extracted}")
 
 
@@ -105,7 +105,7 @@ def hasher(
             line = yield
             hash.update(bytearray(line, "utf-8"))
             next_cb.send(line)
-    except GeneratorExit:
+    finally:
         hash = f"md5: {hash.hexdigest()}"
         print(hash)
         writer_coro.send("")
@@ -114,11 +114,8 @@ def hasher(
 
 def rpz_entry_formatter(next_cb: typing.Coroutine) -> typing.Coroutine:
     print("Formatting domain names to NX RPZ-compliant style: <domain name> CNAME .")
-    try:
-        while True:
-            next_cb.send(f"{yield} CNAME .")
-    except GeneratorExit:
-        pass
+    while True:
+        next_cb.send(f"{(yield)} CNAME .")
 
 
 def writer(destination_file: str):
@@ -128,9 +125,8 @@ def writer(destination_file: str):
         try:
             with os.fdopen(temp_file_fd, mode="w") as temp_file:
                 while True:
-                    line = yield
-                    temp_file.write(f"{line}\n")
-        except GeneratorExit:
+                    temp_file.write(f"{(yield)}\n")
+        finally:
             md5_pattern = re.compile(r"^;\smd5:\s(?P<hexdigest>\w+)")
 
             def get_md5(file_path: str) -> str:
