@@ -124,7 +124,7 @@ if __name__ == "__main__":
     for line in header_generator(source_url, name_server, email_address):
         writer.send(line)
     
-    print (f"Downloading and process file at: {source_url}")
+    print (f"Downloading and processing file at: {source_url}")
     with request.urlopen(source_url) as src_file:
         for line in src_file:
             extract_domain_name.send(line.decode())
