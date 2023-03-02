@@ -100,7 +100,7 @@ def unique_filter(next_coro: typing.Coroutine) -> typing.Coroutine:
     duplicates_count = 0
     try:
         while True:
-            line = yield
+            line = (yield)
             if line not in unique_domain_names:
                 unique_domain_names.add(line)
                 next_coro.send(line)
