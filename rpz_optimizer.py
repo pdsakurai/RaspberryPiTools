@@ -204,6 +204,7 @@ if __name__ == "__main__":
                 for line in src_file:
                     extractor.send(line.decode())
                     yield
+                print(f"Done processing: {url}")
         except request.URLError:
             print(f"Cannot process \"{type}\"-formatted source: {url}")
             
