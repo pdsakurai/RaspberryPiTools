@@ -97,11 +97,17 @@ def extract_domain_name(type_flag: str, next_coro: typing.Coroutine) -> typing.C
 
 def unique_filter(next_coro: typing.Coroutine) -> typing.Coroutine:
     unique_domain_names = set()
-    while True:
-        line = yield
-        if line not in unique_domain_names:
-            unique_domain_names.add(line)
-            next_coro.send(line)
+    duplicates_count = 0
+    try:
+        while True:
+            line = yield
+            if line not in unique_domain_names:
+                unique_domain_names.add(line)
+                next_coro.send(line)
+            else:
+                duplicates_count += 1 
+    finally:
+        print (f"Duplicates filtered out: {duplicates_count}")
 
 
 def hasher(
