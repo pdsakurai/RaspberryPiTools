@@ -94,12 +94,15 @@ def extract_domain_name(type_flag: str, next_cb: typing.Coroutine) -> typing.Cor
         print(f"Domain names extracted: {domain_names_extracted}")
 
 
-def hasher(writer_coro : typing.Coroutine, next_cb: typing.Coroutine) -> typing.Coroutine:
+def hasher(
+    writer_coro: typing.Coroutine, next_cb: typing.Coroutine
+) -> typing.Coroutine:
     import hashlib
+
     hash = hashlib.md5()
     try:
         while True:
-            line = (yield)
+            line = yield
             hash.update(bytearray(line, "utf-8"))
             next_cb.send(line)
     except GeneratorExit:
@@ -129,7 +132,8 @@ def writer(destination_file: str):
                     temp_file.write(f"{line}\n")
         except GeneratorExit:
             md5_pattern = re.compile(r"^;\smd5:\s(?P<hexdigest>\w+)")
-            def get_md5(file_path:str) -> str:
+
+            def get_md5(file_path: str) -> str:
                 try:
                     with open(file_path) as file:
                         for line in file:
