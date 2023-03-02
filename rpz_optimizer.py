@@ -21,7 +21,7 @@ def get_arguments():
         "--type",
         type=str,
         choices=["domain", "host", "rpz non-wildcards only", "rpz wildcards only"],
-        nargs="+"
+        nargs="+",
     )
     args = arg_parser.parse_args()
 
@@ -38,12 +38,14 @@ def get_arguments():
 
 
 def header_generator(
-    source_url: typing.Sequence[str], primary_name_server: str, hostmaster_email_address: str
+    source_url: typing.Sequence[str],
+    primary_name_server: str,
+    hostmaster_email_address: str,
 ):
     today = datetime.now(timezone(timedelta(hours=8))).replace(microsecond=0)
     yield f"; Last modified: {today.isoformat()}"
 
-    for (n,x) in enumerate(source_url,1):
+    for n, x in enumerate(source_url, 1):
         yield f"; Source #{n}: {x}"
 
     time_to_ = {
@@ -72,7 +74,9 @@ def header_generator(
     yield ""
 
 
-def extract_domain_name(type_flag: str, next_coro: typing.Coroutine) -> typing.Coroutine:
+def extract_domain_name(
+    type_flag: str, next_coro: typing.Coroutine
+) -> typing.Coroutine:
     def create_domain_name_pattern() -> re.Pattern:
         if type_flag == "domain":
             return re.compile(r"^(?!#)(?P<domain_name>\S+)")
@@ -97,7 +101,9 @@ def extract_domain_name(type_flag: str, next_coro: typing.Coroutine) -> typing.C
                 domain_names_extracted += 1
                 next_coro.send(matches["domain_name"])
     finally:
-        print(f"Domain names extracted from {type_flag}-formatted source: {domain_names_extracted}")
+        print(
+            f"Domain names extracted from {type_flag}-formatted source: {domain_names_extracted}"
+        )
 
 
 def unique_filter(next_coro: typing.Coroutine) -> typing.Coroutine:
@@ -105,14 +111,14 @@ def unique_filter(next_coro: typing.Coroutine) -> typing.Coroutine:
     duplicates_count = 0
     try:
         while True:
-            line = (yield)
+            line = yield
             if line not in unique_domain_names:
                 unique_domain_names.add(line)
                 next_coro.send(line)
             else:
-                duplicates_count += 1 
+                duplicates_count += 1
     finally:
-        print (f"Duplicates filtered out: {duplicates_count}")
+        print(f"Duplicates filtered out: {duplicates_count}")
 
 
 def hasher(
@@ -180,6 +186,19 @@ class PipedCoroutines:
             i.close()
 
 
+def downloader(url, type, extractor):
+    try:
+        with request.urlopen(url) as src_file:
+            print(f'Processing "{type}"-formatted file at: {url}')
+            yield
+            for line in src_file:
+                extractor.send(line.decode())
+                yield
+            print(f"Done processing: {url}")
+    except request.URLError:
+        print(f'Cannot process "{type}"-formatted source: {url}')
+
+
 if __name__ == "__main__":
     (
         flag_source_url,
@@ -193,21 +212,9 @@ if __name__ == "__main__":
     rpz_entry_formatter = rpz_entry_formatter(next_coro=writer)
     hasher = hasher(writer_coro=writer, next_coro=rpz_entry_formatter)
     unique_filter = unique_filter(next_coro=hasher)
-
-    extractors = dict((x, extract_domain_name(x, next_coro=unique_filter)) for x in set(flag_type) )
-
-    def downloader(url, type, extractor):
-        try:
-            with request.urlopen(url) as src_file:
-                print(f"Processing \"{type}\"-formatted file at: {url}")
-                yield
-                for line in src_file:
-                    extractor.send(line.decode())
-                    yield
-                print(f"Done processing: {url}")
-        except request.URLError:
-            print(f"Cannot process \"{type}\"-formatted source: {url}")
-            
+    extractors = dict(
+        (x, extract_domain_name(x, next_coro=unique_filter)) for x in set(flag_type)
+    )
 
     with PipedCoroutines(
         *extractors.values(), unique_filter, hasher, rpz_entry_formatter, writer
@@ -217,7 +224,12 @@ if __name__ == "__main__":
         ):
             writer.send(line)
 
-        downloaders = deque([downloader(source, type, extractors[type]) for (source, type) in zip(flag_source_url, flag_type)])
+        downloaders = deque(
+            [
+                downloader(source, type, extractors[type])
+                for (source, type) in zip(flag_source_url, flag_type)
+            ]
+        )
 
         while downloaders:
             try:
@@ -226,4 +238,3 @@ if __name__ == "__main__":
                 downloaders.append(item)
             except StopIteration:
                 pass
-
