@@ -1,3 +1,4 @@
+from collections import deque
 import hashlib
 import re
 from urllib import request
@@ -186,6 +187,14 @@ if __name__ == "__main__":
     unique_filter = unique_filter(next_coro=hasher)
     extract_domain_name = extract_domain_name(flag_type, next_coro=unique_filter)
 
+    def downloader(url):
+        print(f"Downloading and processing file at: {url}")
+        with request.urlopen(url) as src_file:
+            yield
+            for line in src_file:
+                extract_domain_name.send(line.decode())
+                yield
+
     with PipedCoroutines(
         extract_domain_name, unique_filter, hasher, rpz_entry_formatter, writer
     ):
@@ -194,9 +203,13 @@ if __name__ == "__main__":
         ):
             writer.send(line)
 
-        print(f"Downloading and processing file at: {flag_source_url}")
-        with request.urlopen(flag_source_url) as src_file:
-            for line in src_file:
-                extract_domain_name.send(line.decode())
+        downloaders = deque([downloader(flag_source_url)])
 
+        while downloaders:
+            try:
+                item = downloaders.popleft()
+                item.send(None)
+                downloaders.append(item)
+            except StopIteration:
+                pass
 
