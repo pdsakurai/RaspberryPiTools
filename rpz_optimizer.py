@@ -98,7 +98,6 @@ def writer(destination_file: str):
                 while True:
                     line = yield
                     temp_file.write(f"{line}\n")
-                    print (f"Written: {line}")
         except GeneratorExit:
             shutil.move(temp_file_path, destination_file)
             print (f"Temporary file moved to: {destination_file}")
