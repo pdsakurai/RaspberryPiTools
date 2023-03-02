@@ -66,7 +66,7 @@ def header_generator(
     yield ""
 
 
-def extract_domain_name(type_flag: str, next_cb: typing.Coroutine) -> typing.Coroutine:
+def extract_domain_name(type_flag: str, next_coro: typing.Coroutine) -> typing.Coroutine:
     def create_domain_name_pattern() -> re.Pattern:
         if type_flag == "domain":
             return re.compile(r"^(?!#)(?P<domain_name>\S+)")
@@ -90,7 +90,7 @@ def extract_domain_name(type_flag: str, next_cb: typing.Coroutine) -> typing.Cor
             matches = domain_name_pattern.match((yield))
             if matches:
                 domain_names_extracted += 1
-                next_cb.send(matches["domain_name"])
+                next_coro.send(matches["domain_name"])
     finally:
         print(f"Domain names extracted: {domain_names_extracted}")
 
@@ -105,14 +105,14 @@ def unique_filter(next_coro: typing.Coroutine) -> typing.Coroutine:
 
 
 def hasher(
-    writer_coro: typing.Coroutine, next_cb: typing.Coroutine
+    writer_coro: typing.Coroutine, next_coro: typing.Coroutine
 ) -> typing.Coroutine:
     hash = hashlib.md5()
     try:
         while True:
             line = yield
             hash.update(bytearray(line, "utf-8"))
-            next_cb.send(line)
+            next_coro.send(line)
     finally:
         hash = f"md5: {hash.hexdigest()}"
         print(hash)
@@ -120,10 +120,10 @@ def hasher(
         writer_coro.send(f"; {hash}")
 
 
-def rpz_entry_formatter(next_cb: typing.Coroutine) -> typing.Coroutine:
+def rpz_entry_formatter(next_coro: typing.Coroutine) -> typing.Coroutine:
     print("Formatting domain names to NX RPZ-compliant style: <domain name> CNAME .")
     while True:
-        next_cb.send(f"{(yield)} CNAME .")
+        next_coro.send(f"{(yield)} CNAME .")
 
 
 def writer(destination_file: str):
@@ -175,10 +175,10 @@ if __name__ == "__main__":
     ) = get_arguments()
 
     writer = writer(flag_destination_file)
-    rpz_entry_formatter = rpz_entry_formatter(next_cb=writer)
-    hasher = hasher(writer_coro=writer, next_cb=rpz_entry_formatter)
+    rpz_entry_formatter = rpz_entry_formatter(next_coro=writer)
+    hasher = hasher(writer_coro=writer, next_coro=rpz_entry_formatter)
     unique_filter = unique_filter(next_coro=hasher)
-    extract_domain_name = extract_domain_name(flag_type, next_cb=unique_filter)
+    extract_domain_name = extract_domain_name(flag_type, next_coro=unique_filter)
 
     with PipedCoroutines(
         extract_domain_name, unique_filter, hasher, rpz_entry_formatter, writer
@@ -192,3 +192,5 @@ if __name__ == "__main__":
         with request.urlopen(flag_source_url) as src_file:
             for line in src_file:
                 extract_domain_name.send(line.decode())
+
+
