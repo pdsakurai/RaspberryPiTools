@@ -94,6 +94,15 @@ def extract_domain_name(type_flag: str, next_cb: typing.Coroutine) -> typing.Cor
         print(f"Domain names extracted: {domain_names_extracted}")
 
 
+def unique_filter(next_coro: typing.Coroutine) -> typing.Coroutine:
+    unique_domain_names = set()
+    while True:
+        line = (yield)
+        if line not in unique_domain_names:
+            unique_domain_names.add(line)
+            next_coro.send(line)
+        
+
 def hasher(
     writer_coro: typing.Coroutine, next_cb: typing.Coroutine
 ) -> typing.Coroutine:
@@ -167,10 +176,12 @@ if __name__ == "__main__":
     writer = writer(flag_destination_file)
     rpz_entry_formatter = rpz_entry_formatter(next_cb=writer)
     hasher = hasher(writer_coro=writer, next_cb=rpz_entry_formatter)
-    extract_domain_name = extract_domain_name(flag_type, next_cb=hasher)
+    unique_filter = unique_filter(next_coro=hasher)
+    extract_domain_name = extract_domain_name(flag_type, next_cb=unique_filter)
 
     with PipedCoroutines(
-        extract_domain_name, 
+        extract_domain_name,
+        unique_filter,
         hasher, 
         rpz_entry_formatter, 
         writer):
