@@ -127,8 +127,13 @@ def hasher(
 
 
 def rpz_entry_formatter(next_coro: typing.Coroutine) -> typing.Coroutine:
-    while True:
-        next_coro.send(f"{(yield)} CNAME .")
+    formatted_counts = 0
+    try:
+        while True:
+            next_coro.send(f"{(yield)} CNAME .")
+            formatted_counts += 1
+    finally:
+        print(f"RPZ-formatted entries: {formatted_counts}")
 
 
 def writer(destination_file: str):
