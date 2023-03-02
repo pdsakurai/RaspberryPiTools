@@ -12,7 +12,9 @@ import typing
 
 def get_arguments():
     arg_parser = ArgumentParser()
-    arg_parser.add_argument("-s", "--source_url", nargs="+", type=str)
+    arg_parser.add_argument(
+        "-s", "--source_url", action="append", required=True, type=str
+    )
     arg_parser.add_argument("-d", "--destination_file", required=True, type=str)
     arg_parser.add_argument("-n", "--name_server", required=True, type=str)
     arg_parser.add_argument("-e", "--email_address", required=True, type=str)
@@ -20,8 +22,9 @@ def get_arguments():
         "-t",
         "--type",
         type=str,
+        required=True,
         choices=["domain", "host", "rpz non-wildcards only", "rpz wildcards only"],
-        nargs="+",
+        action="append",
     )
     args = arg_parser.parse_args()
 
