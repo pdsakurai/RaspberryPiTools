@@ -92,6 +92,21 @@ def extract_domain_name(type_flag: str, next_cb: typing.Coroutine) -> typing.Cor
         print(f"Domain names extracted: {domain_names_extracted}")
 
 
+def hasher(writer_coro : typing.Coroutine, next_cb: typing.Coroutine) -> typing.Coroutine:
+    import hashlib
+    hash = hashlib.md5()
+    try:
+        while True:
+            line = (yield)
+            hash.update(bytearray(line, "utf-8"))
+            next_cb.send(line)
+    except GeneratorExit:
+        hash = f"{hash.name}: {hash.hexdigest()}"
+        print(hash)
+        writer_coro.send("")
+        writer_coro.send(f"; {hash}")
+
+
 def rpz_entry_formatter(next_cb: typing.Coroutine) -> typing.Coroutine:
     print("Formatting domain names to NX RPZ-compliant style: <domain name> CNAME .")
     try:
@@ -126,9 +141,10 @@ if __name__ == "__main__":
 
     writer = writer(flag_destination_file)
     rpz_entry_formatter = rpz_entry_formatter(next_cb=writer)
-    extract_domain_name = extract_domain_name(flag_type, next_cb=rpz_entry_formatter)
+    hasher = hasher(writer_coro=writer, next_cb=rpz_entry_formatter)
+    extract_domain_name = extract_domain_name(flag_type, next_cb=hasher)
 
-    commands = [extract_domain_name, writer, rpz_entry_formatter]
+    commands = [extract_domain_name, hasher, rpz_entry_formatter, writer]
 
     for i in commands:
         next(i)
