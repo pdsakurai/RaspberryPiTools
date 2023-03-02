@@ -1,3 +1,4 @@
+import hashlib
 import re
 from urllib import request
 from datetime import datetime, timedelta, timezone
@@ -97,17 +98,15 @@ def extract_domain_name(type_flag: str, next_cb: typing.Coroutine) -> typing.Cor
 def unique_filter(next_coro: typing.Coroutine) -> typing.Coroutine:
     unique_domain_names = set()
     while True:
-        line = (yield)
+        line = yield
         if line not in unique_domain_names:
             unique_domain_names.add(line)
             next_coro.send(line)
-        
+
 
 def hasher(
     writer_coro: typing.Coroutine, next_cb: typing.Coroutine
 ) -> typing.Coroutine:
-    import hashlib
-
     hash = hashlib.md5()
     try:
         while True:
@@ -152,6 +151,7 @@ def writer(destination_file: str):
                 shutil.move(temp_file_path, destination_file)
                 print(f"Temporary file moved to: {destination_file}")
 
+
 class PipedCoroutines:
     def __init__(self, *commands):
         self.commands = commands
@@ -163,6 +163,7 @@ class PipedCoroutines:
     def __exit__(self, *_):
         for i in self.commands:
             i.close()
+
 
 if __name__ == "__main__":
     (
@@ -180,16 +181,14 @@ if __name__ == "__main__":
     extract_domain_name = extract_domain_name(flag_type, next_cb=unique_filter)
 
     with PipedCoroutines(
-        extract_domain_name,
-        unique_filter,
-        hasher, 
-        rpz_entry_formatter, 
-        writer):
-        for line in header_generator(flag_source_url, flag_name_server, flag_email_address):
+        extract_domain_name, unique_filter, hasher, rpz_entry_formatter, writer
+    ):
+        for line in header_generator(
+            flag_source_url, flag_name_server, flag_email_address
+        ):
             writer.send(line)
 
         print(f"Downloading and processing file at: {flag_source_url}")
         with request.urlopen(flag_source_url) as src_file:
             for line in src_file:
                 extract_domain_name.send(line.decode())
-
