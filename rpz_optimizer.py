@@ -105,14 +105,14 @@ def writer(destination_file: str):
 
 if __name__ == "__main__":
     (
-        source_url,
-        destination_file,
-        name_server,
-        email_address,
+        flag_source_url,
+        flag_destination_file,
+        flag_name_server,
+        flag_email_address,
         flag_type,
     ) = get_arguments()
 
-    writer = writer(destination_file)
+    writer = writer(flag_destination_file)
     rpz_entry_formatter = rpz_entry_formatter(next_cb=writer)
     extract_domain_name = extract_domain_name(flag_type, next_cb=rpz_entry_formatter)
 
@@ -121,11 +121,11 @@ if __name__ == "__main__":
     for i in commands:
         next(i)
 
-    for line in header_generator(source_url, name_server, email_address):
+    for line in header_generator(flag_source_url, flag_name_server, flag_email_address):
         writer.send(line)
     
-    print (f"Downloading and processing file at: {source_url}")
-    with request.urlopen(source_url) as src_file:
+    print (f"Downloading and processing file at: {flag_source_url}")
+    with request.urlopen(flag_source_url) as src_file:
         for line in src_file:
             extract_domain_name.send(line.decode())
 
