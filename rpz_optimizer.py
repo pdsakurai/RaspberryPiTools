@@ -91,16 +91,17 @@ def rpz_entry_formatter(next_cb: typing.Coroutine) -> typing.Coroutine:
 
 def writer(destination_file: str):
     with tempfile.TemporaryDirectory() as temp_dir:
-        temp_file_fd, temp_file_path = tempfile.mkstemp(text=True, dir=temp_dir)
+        temp_file_fd, temp_file_path = tempfile.mkstemp(dir=temp_dir)
         print (f"Temporary file created: {temp_file_path}")
-        with os.fdopen(temp_file_fd, mode="w") as temp_file:
-            try:
+        try:
+            with os.fdopen(temp_file_fd, mode="w") as temp_file:
                 while True:
                     line = yield
                     temp_file.write(f"{line}\n")
-            except GeneratorExit:
-                shutil.move(temp_file_path, destination_file)
-                print (f"Temporary file moved to: {destination_file}")
+                    print (f"Written: {line}")
+        except GeneratorExit:
+            shutil.move(temp_file_path, destination_file)
+            print (f"Temporary file moved to: {destination_file}")
 
 
 if __name__ == "__main__":
