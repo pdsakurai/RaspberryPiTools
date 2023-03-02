@@ -14,14 +14,14 @@ def get_arguments():
     arg_parser.add_argument("-d", "--destination_file", required=True, type=str)
     arg_parser.add_argument("-n", "--name_server", required=True, type=str)
     arg_parser.add_argument("-e", "--email_address", required=True, type=str)
-    arg_parser.add_argument("-w", "--wildcards_only", action="store_true")
+    arg_parser.add_argument("-t", "--type", type=str, choices=["host", "rpz non-wildcards only", "rpz wildcards only"], required=True)
     args = arg_parser.parse_args()
     return (
         args.source_url,
         args.destination_file,
         args.name_server,
         args.email_address,
-        args.wildcards_only,
+        args.type
     )
 
 
@@ -58,38 +58,41 @@ def header_generator(
 
     yield ""
 
+def extract_domain_name(type_flag : str, next_cb : typing.Coroutine) -> typing.Coroutine:
+    def create_domain_name_pattern() -> re.Pattern:
+        if type_flag == "host":
+            return re.compile(r"^0.0.0.0\s(?P<domain_name>.+)")
+        if type_flag == "rpz non-wildcards only":
+            return re.compile(r"^(?P<domain_name>(?=\w).+)(\s+CNAME\s+\.)", re.IGNORECASE)
+        if type_flag == "rpz wildcards only":
+            return re.compile(r"^(?P<domain_name>(?=\*\.).+)(\s+CNAME\s+\.)", re.IGNORECASE)
+        raise Exception("Invalid type_flag") 
 
-def downloader(source_url: str, next_cb: typing.Coroutine):
-    with request.urlopen(source_url) as src_file:
-        for line in src_file:
-            next_cb.send(line.decode())
-        next_cb.close()
-
-
-def filter(wildcards_only: bool, next_cb: typing.Coroutine):
-    regex = re.compile(r"^\*\.") if wildcards_only else re.compile(r"^\w")
-    is_valid_rpz_trigger_rule = lambda entry: regex.match(entry)
+    print (f"Extracting domain names using this format: {type_flag}")
+    domain_name_pattern = create_domain_name_pattern()
+    domain_names_extracted = 0
     try:
         while True:
-            line = yield
-            if is_valid_rpz_trigger_rule(line):
-                next_cb.send(line)
+            matches = domain_name_pattern.match((yield))
+            if matches:
+                domain_names_extracted+=1
+                next_cb.send(matches["domain_name"])
     except GeneratorExit:
-        next_cb.close()
+        print (f"Domain names extracted: {domain_names_extracted}")
 
 
-def linter(next_cb: typing.Coroutine):
+def rpz_entry_formatter(next_cb: typing.Coroutine) -> typing.Coroutine:
+    print ("Formatting domain names to NX RPZ-compliant style: <domain name> CNAME .")
     try:
         while True:
-            line = yield
-            next_cb.send(line.replace("\n", "").lstrip())
+            next_cb.send(f"{yield} CNAME .")
     except GeneratorExit:
-        next_cb.close()
-
+        pass
 
 def writer(destination_file: str):
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file_fd, temp_file_path = tempfile.mkstemp(text=True, dir=temp_dir)
+        print (f"Temporary file created: {temp_file_path}")
         with os.fdopen(temp_file_fd, mode="w") as temp_file:
             try:
                 while True:
@@ -97,6 +100,7 @@ def writer(destination_file: str):
                     temp_file.write(f"{line}\n")
             except GeneratorExit:
                 shutil.move(temp_file_path, destination_file)
+                print (f"Temporary file moved to: {destination_file}")
 
 
 if __name__ == "__main__":
@@ -105,24 +109,26 @@ if __name__ == "__main__":
         destination_file,
         name_server,
         email_address,
-        wildcards_only,
+        flag_type,
     ) = get_arguments()
 
-    writer_ = writer(destination_file)
-    next(writer_)
-    linter_ = linter(next_cb=writer_)
-    next(linter_)
-    filter_ = filter(wildcards_only, next_cb=linter_)
-    next(filter_)
+    writer = writer(destination_file)
+    rpz_entry_formatter = rpz_entry_formatter(next_cb=writer)
+    extract_domain_name = extract_domain_name(flag_type, next_cb=rpz_entry_formatter)
+
+    commands = [extract_domain_name, writer, rpz_entry_formatter]
+
+    for i in commands:
+        next(i)
 
     for line in header_generator(source_url, name_server, email_address):
-        writer_.send(line)
-    downloader(source_url, next_cb=filter_)
+        writer.send(line)
+    
+    print (f"Downloading and process file at: {source_url}")
+    with request.urlopen(source_url) as src_file:
+        for line in src_file:
+            extract_domain_name.send(line.decode())
 
-
-# def get_domain_name():
-#     regex = re.compile(r"^(?P<domain>(?=\w|\*\.).+)(\s+CNAME\s+\.)", re.IGNORECASE)
-#     def _impl(entry):
-#         return regex.match(entry)["domain"]
-#     return _impl
-# get_domain_name = get_domain_name()
+    for i in commands:
+        i.close()
+    
