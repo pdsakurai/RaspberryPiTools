@@ -101,7 +101,7 @@ def hasher(writer_coro : typing.Coroutine, next_cb: typing.Coroutine) -> typing.
             hash.update(bytearray(line, "utf-8"))
             next_cb.send(line)
     except GeneratorExit:
-        hash = f"{hash.name}: {hash.hexdigest()}"
+        hash = f"md5: {hash.hexdigest()}"
         print(hash)
         writer_coro.send("")
         writer_coro.send(f"; {hash}")
@@ -126,8 +126,20 @@ def writer(destination_file: str):
                     line = yield
                     temp_file.write(f"{line}\n")
         except GeneratorExit:
-            shutil.move(temp_file_path, destination_file)
-            print(f"Temporary file moved to: {destination_file}")
+            md5_pattern = re.compile(r"^;\smd5:\s(?P<hexdigest>\w+)")
+            def get_md5(file_path:str) -> str:
+                try:
+                    with open(file_path) as file:
+                        for line in file:
+                            found_md5 = md5_pattern.match(line)
+                            if found_md5:
+                                return found_md5["hexdigest"]
+                except OSError:
+                    return None
+
+            if get_md5(destination_file) != get_md5(temp_file_path):
+                shutil.move(temp_file_path, destination_file)
+                print(f"Temporary file moved to: {destination_file}")
 
 
 if __name__ == "__main__":
