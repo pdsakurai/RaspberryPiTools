@@ -21,9 +21,13 @@ def get_arguments():
         "--type",
         type=str,
         choices=["domain", "host", "rpz non-wildcards only", "rpz wildcards only"],
-        required=True,
+        nargs="+"
     )
     args = arg_parser.parse_args()
+
+    if len(args.source_url) != len(args.type):
+        raise "Must have the same number of args for -s and -t"
+
     return (
         args.source_url,
         args.destination_file,
@@ -93,7 +97,7 @@ def extract_domain_name(type_flag: str, next_coro: typing.Coroutine) -> typing.C
                 domain_names_extracted += 1
                 next_coro.send(matches["domain_name"])
     finally:
-        print(f"Domain names extracted: {domain_names_extracted}")
+        print(f"Domain names extracted from {type_flag}-formatted source: {domain_names_extracted}")
 
 
 def unique_filter(next_coro: typing.Coroutine) -> typing.Coroutine:
@@ -189,25 +193,26 @@ if __name__ == "__main__":
     rpz_entry_formatter = rpz_entry_formatter(next_coro=writer)
     hasher = hasher(writer_coro=writer, next_coro=rpz_entry_formatter)
     unique_filter = unique_filter(next_coro=hasher)
-    extract_domain_name = extract_domain_name(flag_type, next_coro=unique_filter)
 
-    def downloader(url,type):
+    extractors = dict((x, extract_domain_name(x, next_coro=unique_filter)) for x in set(flag_type) )
+
+    def downloader(url, type, extractor):
         with request.urlopen(url) as src_file:
             print(f"Processing {type}-formatted file at: {url}")
             yield
             for line in src_file:
-                extract_domain_name.send(line.decode())
+                extractor.send(line.decode())
                 yield
 
     with PipedCoroutines(
-        extract_domain_name, unique_filter, hasher, rpz_entry_formatter, writer
+        *extractors.values(), unique_filter, hasher, rpz_entry_formatter, writer
     ):
         for line in header_generator(
             flag_source_url, flag_name_server, flag_email_address
         ):
             writer.send(line)
 
-        downloaders = deque([downloader(source, flag_type) for source in flag_source_url])
+        downloaders = deque([downloader(source, type, extractors[type]) for (source, type) in zip(flag_source_url, flag_type)])
 
         while downloaders:
             try:
