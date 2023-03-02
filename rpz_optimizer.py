@@ -143,6 +143,17 @@ def writer(destination_file: str):
                 shutil.move(temp_file_path, destination_file)
                 print(f"Temporary file moved to: {destination_file}")
 
+class PipedCoroutines:
+    def __init__(self, *commands):
+        self.commands = commands
+
+    def __enter__(self):
+        for i in self.commands:
+            next(i)
+
+    def __exit__(self, *_):
+        for i in self.commands:
+            i.close()
 
 if __name__ == "__main__":
     (
@@ -158,18 +169,16 @@ if __name__ == "__main__":
     hasher = hasher(writer_coro=writer, next_cb=rpz_entry_formatter)
     extract_domain_name = extract_domain_name(flag_type, next_cb=hasher)
 
-    commands = [extract_domain_name, hasher, rpz_entry_formatter, writer]
+    with PipedCoroutines(
+        extract_domain_name, 
+        hasher, 
+        rpz_entry_formatter, 
+        writer):
+        for line in header_generator(flag_source_url, flag_name_server, flag_email_address):
+            writer.send(line)
 
-    for i in commands:
-        next(i)
+        print(f"Downloading and processing file at: {flag_source_url}")
+        with request.urlopen(flag_source_url) as src_file:
+            for line in src_file:
+                extract_domain_name.send(line.decode())
 
-    for line in header_generator(flag_source_url, flag_name_server, flag_email_address):
-        writer.send(line)
-
-    print(f"Downloading and processing file at: {flag_source_url}")
-    with request.urlopen(flag_source_url) as src_file:
-        for line in src_file:
-            extract_domain_name.send(line.decode())
-
-    for i in commands:
-        i.close()
