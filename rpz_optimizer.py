@@ -12,7 +12,7 @@ import typing
 
 def get_arguments():
     arg_parser = ArgumentParser()
-    arg_parser.add_argument("-s", "--source_url", required=True, type=str)
+    arg_parser.add_argument("-s", "--source_url", nargs="+", type=str)
     arg_parser.add_argument("-d", "--destination_file", required=True, type=str)
     arg_parser.add_argument("-n", "--name_server", required=True, type=str)
     arg_parser.add_argument("-e", "--email_address", required=True, type=str)
@@ -34,12 +34,13 @@ def get_arguments():
 
 
 def header_generator(
-    source_url: str, primary_name_server: str, hostmaster_email_address: str
+    source_url: typing.Sequence[str], primary_name_server: str, hostmaster_email_address: str
 ):
-    yield f"; Source: {source_url}"
-
     today = datetime.now(timezone(timedelta(hours=8))).replace(microsecond=0)
     yield f"; Last modified: {today.isoformat()}"
+
+    for (n,x) in enumerate(source_url,1):
+        yield f"; Source #{n}: {x}"
 
     time_to_ = {
         "expire SOA": int(timedelta(hours=1).total_seconds()),
@@ -206,7 +207,7 @@ if __name__ == "__main__":
         ):
             writer.send(line)
 
-        downloaders = deque([downloader(flag_source_url, flag_type)])
+        downloaders = deque([downloader(source, flag_type) for source in flag_source_url])
 
         while downloaders:
             try:
