@@ -68,7 +68,7 @@ def header_generator(
 def extract_domain_name(type_flag: str, next_cb: typing.Coroutine) -> typing.Coroutine:
     def create_domain_name_pattern() -> re.Pattern:
         if type_flag == "host":
-            return re.compile(r"^0.0.0.0\s+(?P<domain_name>\S+)")
+            return re.compile(r"^(0.0.0.0)\s+(?!\1)(?P<domain_name>\S+)")
         if type_flag == "rpz non-wildcards only":
             return re.compile(
                 r"^(?P<domain_name>(?=\w).+)(\s+CNAME\s+\.)", re.IGNORECASE
