@@ -39,19 +39,21 @@ def header_generator(
     source_url: typing.Sequence[str],
     primary_name_server: str,
     hostmaster_email_address: str,
-):
-    today = datetime.now(timezone(timedelta(hours=8))).replace(microsecond=0)
+) -> str:
+    tz_manila = timezone(timedelta(hours=8))
+    today = datetime.now(tz_manila).replace(microsecond=0)
     yield f"; Last modified: {today.isoformat()}"
 
     for n, x in enumerate(source_url, 1):
         yield f"; Source #{n}: {x}"
 
+    to_seconds = lambda **kwargs: int(timedelta(**kwargs).total_seconds())
     time_to_ = {
-        "expire SOA": int(timedelta(hours=1).total_seconds()),
-        "refresh": int(timedelta(days=1).total_seconds()),
-        "retry": int(timedelta(minutes=1).total_seconds()),
-        "expire": int(timedelta(days=30).total_seconds()),
-        "expire NXDOMAIN cache": int(timedelta(seconds=30).total_seconds()),
+        "expire SOA": to_seconds(hours=1),
+        "refresh": to_seconds(days=1),
+        "retry": to_seconds(minutes=1),
+        "expire": to_seconds(days=30),
+        "expire NXDOMAIN cache": to_seconds(seconds=30),
     }
 
     yield ""
