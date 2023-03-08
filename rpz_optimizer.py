@@ -22,14 +22,14 @@ def get_arguments() -> argparse.Namespace:
     arg_parser.add_argument("-s", "--source_url", **arg_characteristics)
     arg_parser.add_argument(
         "-t",
-        "--type",
+        "--source_type",
         **arg_characteristics,
         choices=["domain", "host", "rpz non-wildcards only", "rpz wildcards only"],
     )
 
     args = arg_parser.parse_args()
 
-    if len(args.source_url) != len(args.type):
+    if len(args.source_url) != len(args.source_type):
         raise "Must have the same number of args for -s and -t"
 
     return args
@@ -207,7 +207,7 @@ if __name__ == "__main__":
     hasher = hasher(writer_coro=writer, next_coro=rpz_entry_formatter)
     unique_filter = unique_filter(next_coro=hasher)
     extractors = dict(
-        (x, extract_domain_name(x, next_coro=unique_filter)) for x in set(args.type)
+        (x, extract_domain_name(x, next_coro=unique_filter)) for x in set(args.source_type)
     )
 
     with PipedCoroutines(
@@ -221,7 +221,7 @@ if __name__ == "__main__":
         downloaders = deque(
             [
                 downloader(source, type, extractors[type])
-                for (source, type) in zip(args.source_url, args.type)
+                for (source, type) in zip(args.source_url, args.source_type)
             ]
         )
 
