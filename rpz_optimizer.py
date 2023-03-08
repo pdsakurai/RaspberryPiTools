@@ -80,18 +80,18 @@ def header_generator(
 
 
 def extract_domain_name(
-    type_flag: str, next_coro: typing.Coroutine
-) -> typing.Coroutine:
+    source_type: str, next_coro: typing.Coroutine[typing.Any, str, typing.Any]
+) -> typing.Coroutine[None, str, None]:
     def create_domain_name_pattern() -> re.Pattern:
-        if type_flag == "domain":
+        if source_type == "domain":
             return re.compile(r"^(?!#)(?P<domain_name>\S+)")
-        if type_flag == "host":
+        if source_type == "host":
             return re.compile(r"^(0.0.0.0)\s+(?!\1)(?P<domain_name>\S+)")
-        if type_flag == "rpz non-wildcards only":
+        if source_type == "rpz non-wildcards only":
             return re.compile(
                 r"^(?P<domain_name>(?=\w).+)(\s+CNAME\s+\.)", re.IGNORECASE
             )
-        if type_flag == "rpz wildcards only":
+        if source_type == "rpz wildcards only":
             return re.compile(
                 r"^(?P<domain_name>(?=\*\.).+)(\s+CNAME\s+\.)", re.IGNORECASE
             )
@@ -101,13 +101,12 @@ def extract_domain_name(
     domain_names_extracted = 0
     try:
         while True:
-            matches = domain_name_pattern.match((yield))
-            if matches:
+            if matches := domain_name_pattern.match((yield)):
                 domain_names_extracted += 1
                 next_coro.send(matches["domain_name"])
     finally:
         print(
-            f'Domain names extracted from "{type_flag}"-formatted source: {domain_names_extracted:,}'
+            f'Domain names extracted from "{source_type}"-formatted source: {domain_names_extracted:,}'
         )
 
 
