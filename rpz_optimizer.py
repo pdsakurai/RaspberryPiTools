@@ -3,41 +3,36 @@ import hashlib
 import re
 from urllib import request
 from datetime import datetime, timedelta, timezone
-from argparse import ArgumentParser
+import argparse
 import tempfile
 import os
 import shutil
 import typing
 
 
-def get_arguments():
-    arg_parser = ArgumentParser()
-    arg_parser.add_argument(
-        "-s", "--source_url", action="append", required=True, type=str
-    )
-    arg_parser.add_argument("-d", "--destination_file", required=True, type=str)
-    arg_parser.add_argument("-n", "--name_server", required=True, type=str)
-    arg_parser.add_argument("-e", "--email_address", required=True, type=str)
+def get_arguments() -> argparse.Namespace:
+    arg_parser = argparse.ArgumentParser()
+
+    arg_characteristics = {"required": True, "type": str}
+    arg_parser.add_argument("-n", "--name_server", **arg_characteristics)
+    arg_parser.add_argument("-e", "--email_address", **arg_characteristics)
+    arg_parser.add_argument("-d", "--destination_file", **arg_characteristics)
+
+    arg_characteristics.setdefault("action", "append")
+    arg_parser.add_argument("-s", "--source_url", **arg_characteristics)
     arg_parser.add_argument(
         "-t",
         "--type",
-        type=str,
-        required=True,
+        **arg_characteristics,
         choices=["domain", "host", "rpz non-wildcards only", "rpz wildcards only"],
-        action="append",
     )
+
     args = arg_parser.parse_args()
 
     if len(args.source_url) != len(args.type):
         raise "Must have the same number of args for -s and -t"
 
-    return (
-        args.source_url,
-        args.destination_file,
-        args.name_server,
-        args.email_address,
-        args.type,
-    )
+    return args
 
 
 def header_generator(
@@ -205,32 +200,28 @@ def downloader(url: str, type: str, extractor: typing.Coroutine) -> None:
 
 
 if __name__ == "__main__":
-    (
-        source_urls,
-        destination_file,
-        name_server,
-        email_address,
-        source_types,
-    ) = get_arguments()
+    args = get_arguments()
 
-    writer = writer(destination_file)
+    writer = writer(args.destination_file)
     rpz_entry_formatter = rpz_entry_formatter(next_coro=writer)
     hasher = hasher(writer_coro=writer, next_coro=rpz_entry_formatter)
     unique_filter = unique_filter(next_coro=hasher)
     extractors = dict(
-        (x, extract_domain_name(x, next_coro=unique_filter)) for x in set(source_types)
+        (x, extract_domain_name(x, next_coro=unique_filter)) for x in set(args.type)
     )
 
     with PipedCoroutines(
         *extractors.values(), unique_filter, hasher, rpz_entry_formatter, writer
     ):
-        for line in header_generator(source_urls, name_server, email_address):
+        for line in header_generator(
+            args.source_url, args.name_server, args.email_address
+        ):
             writer.send(line)
 
         downloaders = deque(
             [
                 downloader(source, type, extractors[type])
-                for (source, type) in zip(source_urls, source_types)
+                for (source, type) in zip(args.source_url, args.type)
             ]
         )
 
