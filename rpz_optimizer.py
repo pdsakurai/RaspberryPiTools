@@ -110,7 +110,9 @@ def extract_domain_name(
         )
 
 
-def unique_filter(next_coro: typing.Coroutine) -> typing.Coroutine:
+def unique_filter(
+    next_coro: typing.Coroutine[typing.Any, str, typing.Any]
+) -> typing.Coroutine[None, str, None]:
     unique_domain_names = set()
     duplicates_count = 0
     try:
@@ -126,8 +128,9 @@ def unique_filter(next_coro: typing.Coroutine) -> typing.Coroutine:
 
 
 def hasher(
-    writer_coro: typing.Coroutine, next_coro: typing.Coroutine
-) -> typing.Coroutine:
+    writer_coro: typing.Coroutine[typing.Any, str, typing.Any],
+    next_coro: typing.Coroutine[typing.Any, str, typing.Any],
+) -> typing.Coroutine[None, str, None]:
     hash = hashlib.md5()
     try:
         while True:
@@ -141,7 +144,9 @@ def hasher(
         writer_coro.send(f"; {hash}")
 
 
-def rpz_entry_formatter(next_coro: typing.Coroutine) -> typing.Coroutine:
+def rpz_entry_formatter(
+    next_coro: typing.Coroutine[typing.Any, str, typing.Any],
+) -> typing.Coroutine[None, str, None]:
     formatted_counts = 0
     try:
         while True:
@@ -151,7 +156,7 @@ def rpz_entry_formatter(next_coro: typing.Coroutine) -> typing.Coroutine:
         print(f"RPZ-formatted entries: {formatted_counts:,}")
 
 
-def writer(destination_file: str) -> typing.Coroutine:
+def writer(destination_file: str) -> typing.Coroutine[None, str, None]:
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file_fd, temp_file_path = tempfile.mkstemp(dir=temp_dir)
         print(f"Temporary file created: {temp_file_path}")
@@ -166,8 +171,7 @@ def writer(destination_file: str) -> typing.Coroutine:
                 try:
                     with open(file_path) as file:
                         for line in file:
-                            found_md5 = md5_pattern.match(line)
-                            if found_md5:
+                            if found_md5 := md5_pattern.match(line):
                                 return found_md5["hexdigest"]
                 except OSError:
                     return None
@@ -192,14 +196,15 @@ class PipedCoroutines:
             i.close()
 
 
-def downloader(url: str, type: str, extractor: typing.Coroutine) -> None:
+def downloader(
+    url: str, type: str, extractor: typing.Coroutine[typing.Any, str, typing.Any]
+) -> typing.Coroutine[None, typing.Any, None]:
     try:
         with request.urlopen(url) as src_file:
             print(f'Processing "{type}"-formatted source: {url}')
-            (yield)
             for line in src_file:
-                extractor.send(line.decode())
                 (yield)
+                extractor.send(line.decode())
             print(f"Done processing: {url}")
     except request.URLError:
         print(f'Cannot process "{type}"-formatted source: {url}')
@@ -212,9 +217,10 @@ if __name__ == "__main__":
     rpz_entry_formatter = rpz_entry_formatter(next_coro=writer)
     hasher = hasher(writer_coro=writer, next_coro=rpz_entry_formatter)
     unique_filter = unique_filter(next_coro=hasher)
-    extractors = dict(
-        (x, extract_domain_name(x, next_coro=unique_filter)) for x in set(args.source_type)
-    )
+    extractors = {
+        x: extract_domain_name(x, next_coro=unique_filter)
+        for x in set(args.source_type)
+    }
 
     with PipedCoroutines(
         *extractors.values(), unique_filter, hasher, rpz_entry_formatter, writer
@@ -225,16 +231,17 @@ if __name__ == "__main__":
             writer.send(line)
 
         downloaders = deque(
-            [
+            (
                 downloader(source, type, extractors[type])
-                for (source, type) in zip(args.source_url, args.source_type)
-            ]
+                for source, type in zip(args.source_url, args.source_type)
+            )
         )
 
         while downloaders:
+            item = downloaders.popleft()
             try:
-                item = downloaders.popleft()
                 item.send(None)
-                downloaders.append(item)
             except StopIteration:
                 pass
+            else:
+                downloaders.append(item)
