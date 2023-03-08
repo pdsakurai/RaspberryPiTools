@@ -63,12 +63,17 @@ def header_generator(
     hostmaster_email_address = hostmaster_email_address.replace(".", "/.").replace(
         "@", "."
     )
-    yield f"@ IN SOA {primary_name_server}. {hostmaster_email_address}. ("
-    yield f"         {today.strftime('%y%m%d%H%M')}"
-    yield f"         {time_to_['refresh']}"
-    yield f"         {time_to_['retry']}"
-    yield f"         {time_to_['expire']}"
-    yield f"         {time_to_['expire NXDOMAIN cache']} )"
+    yield (
+        f"@ IN SOA"
+        f" {primary_name_server}."
+        f" {hostmaster_email_address}."
+        f" {today.strftime('%y%m%d%H%M')}"
+        f" {time_to_['refresh']}"
+        f" {time_to_['retry']}"
+        f" {time_to_['expire']}"
+        f" {time_to_['expire NXDOMAIN cache']}"
+    )
+
     yield f" NS localhost."
 
     yield ""
