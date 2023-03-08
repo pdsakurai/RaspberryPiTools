@@ -39,7 +39,7 @@ def header_generator(
     source_url: typing.Sequence[str],
     primary_name_server: str,
     hostmaster_email_address: str,
-) -> str:
+) -> typing.Generator[str, None, None]:
     tz_manila = timezone(timedelta(hours=8))
     today = datetime.now(tz_manila).replace(microsecond=0)
     yield f"; Last modified: {today.isoformat()}"
