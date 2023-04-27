@@ -22,8 +22,8 @@ esac; done
 
 [ -n "$1" ] && echo "Unexpected arguments: $1" && exit 1
 
-${interface:?Missing: Interface name}
-${peer_ip_address:?Missing: Peer IP address}
+[ ${interface:?Missing: Interface name} ]
+[ ${peer_ip_address:?Missing: Peer IP address} ]
 
 function is_peer_alive() {
     ping -c 1 -W 1 -q -I $interface $peer_ip_address 2&> /dev/null
