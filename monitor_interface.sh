@@ -30,8 +30,7 @@ function is_peer_alive() {
 }
 exit 0
 function is_wireguard() {
-    [ -n "$is_wireguard_flag" ] || return 1
-    command -v wg-quick &> /dev/null
+    [ -n "$is_wireguard_flag" ] && command -v wg-quick &> /dev/null
 }
 
 is_peer_alive || \
