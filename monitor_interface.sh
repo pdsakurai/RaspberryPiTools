@@ -2,7 +2,7 @@
 
 while [[ "$1" =~ ^- ]]; do case $1 in
   -w | --wireguard )
-    is_wireguard=1
+    is_wireguard_flag=1
     shift
     ;;
   -I | --interface )
@@ -30,9 +30,8 @@ function is_peer_alive() {
 }
 exit 0
 function is_wireguard() {
-    [ -n $is_wireguard ] || return 1
-    command -v wg-quick 2&> /dev/null && return 0
-    return 1
+    [ -n "$is_wireguard_flag" ] || return 1
+    command -v wg-quick &> /dev/null
 }
 
 is_peer_alive || \
