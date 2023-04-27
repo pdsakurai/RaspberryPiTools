@@ -26,7 +26,7 @@ esac; done
 [ ${peer_ip_address:?Missing: Peer IP address} ]
 
 function is_peer_alive() {
-    ping -c 1 -W 1 -q -I $interface $peer_ip_address 2&> /dev/null
+    ping -c 1 -W 1 -q -I $interface $peer_ip_address &> /dev/null
 }
 exit 0
 function is_wireguard() {
