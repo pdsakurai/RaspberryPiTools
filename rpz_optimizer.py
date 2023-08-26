@@ -10,6 +10,13 @@ import shutil
 import typing
 
 
+rpz_actions={
+    "nodata": "CNAME .*",
+    "nxdomain": "CNAME .",
+    "null": "A 0.0.0.0"
+}
+
+
 def get_arguments() -> argparse.Namespace:
     arg_parser = argparse.ArgumentParser()
 
@@ -17,6 +24,7 @@ def get_arguments() -> argparse.Namespace:
     arg_parser.add_argument("-n", "--name_server", **arg_characteristics)
     arg_parser.add_argument("-e", "--email_address", **arg_characteristics)
     arg_parser.add_argument("-d", "--destination_file", **arg_characteristics)
+    arg_parser.add_argument("-a", "--rpz_action", **arg_characteristics, choices=list(rpz_actions.keys()))
 
     arg_characteristics.setdefault("action", "append")
     arg_parser.add_argument("-s", "--source_url", **arg_characteristics)
@@ -143,14 +151,14 @@ def hasher(
         writer_coro.send("")
         writer_coro.send(f"; {hash}")
 
-
 def rpz_entry_formatter(
+    rpz_action: str,
     next_coro: typing.Coroutine[typing.Any, str, typing.Any],
 ) -> typing.Coroutine[None, str, None]:
     formatted_counts = 0
     try:
         while True:
-            next_coro.send(f"{(yield)} CNAME .")
+            next_coro.send(f"{(yield)} {rpz_action}")
             formatted_counts += 1
     finally:
         print(f"RPZ-formatted entries: {formatted_counts:,}")
@@ -214,7 +222,7 @@ if __name__ == "__main__":
     args = get_arguments()
 
     writer = writer(args.destination_file)
-    rpz_entry_formatter = rpz_entry_formatter(next_coro=writer)
+    rpz_entry_formatter = rpz_entry_formatter(rpz_actions[args.rpz_action], next_coro=writer)
     hasher = hasher(writer_coro=writer, next_coro=rpz_entry_formatter)
     unique_filter = unique_filter(next_coro=hasher)
     extractors = {
