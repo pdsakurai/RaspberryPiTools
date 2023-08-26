@@ -24,7 +24,7 @@ def get_arguments() -> argparse.Namespace:
         "-t",
         "--source_type",
         **arg_characteristics,
-        choices=["domain", "host", "rpz non-wildcards only", "rpz wildcards only"],
+        choices=["domain", "host", "rpz non-wildcard only", "rpz wildcard only"],
     )
 
     args = arg_parser.parse_args()
