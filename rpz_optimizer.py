@@ -74,7 +74,7 @@ def header_generator(
         f" {time_to_['expire NXDOMAIN cache']}"
     )
 
-    yield f" NS localhost."
+    yield f" IN NS localhost."
 
     yield ""
 
