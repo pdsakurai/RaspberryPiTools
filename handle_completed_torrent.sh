@@ -47,10 +47,10 @@ log "Proccesing torrent path: $TORRENT_PATH"
 #Environment
 readonly dir_root="/mnt/eHDD/Videos"
 readonly dir_anime="$dir_root/Anime"
-readonly dir_movie="$dir_root/Movie"
-readonly dir_tvshow="$dir_root/TV show"
+readonly dir_movie="$dir_root/Movies"
+readonly dir_tvshow="$dir_root/TV Series"
 
-readonly script_location="/home/pi"
+readonly script_location="/mnt/dietpi_userdata/GitHub/RaspberryPiTools"
 source $script_location/filedirectory_helper.sh
 source $script_location/completed_torrent_handlers/PSA.sh
 
