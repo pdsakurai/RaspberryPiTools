@@ -82,8 +82,9 @@ function process_movie() {
     local -r folder_name_cleaned="$( clean_text_using_sed "$folder_name_original" sed_additional_option[@] )"
     ls -1A "$torrent_path" | while read entry_name; do
         local entry_full_file_path="$torrent_path/$entry_name"
-        if [[ -f "$torrent_path/$entry_name" ]] && [[ "${entry_name%.*}" == "$folder_name_original" ]]; then
-            rename "$entry_full_file_path" "$folder_name_cleaned"
+        if [[ -f "$entry_full_file_path" ]] && [[ "${entry_name%.*}" == "$folder_name_original" ]]; then
+            local -r tags_suffix="$( get_tags_suffix "$entry_name" )"
+            rename "$entry_full_file_path" "$folder_name_cleaned$tags_suffix"
         else
             delete "$entry_full_file_path"
         fi
