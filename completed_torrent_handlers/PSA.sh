@@ -6,6 +6,26 @@
 
 readonly RE_RESOLUTION="\b\(\(?>216\|108\|72\)0p\)\b"
 
+function get_resolution() {
+    local text="${1:?Missing: Text}"
+
+    printf "$text" | sed "s/.*$RE_RESOLUTION.*/\1/"
+}
+
+# Reference: https://jellyfin.org/docs/general/server/media/movies/
+function get_tags_suffix() {
+    local -r original_file_name="${1:?Missing: Original file name}"
+
+    local tags=
+
+    local -r resolution="$( get_resolution "$original_file_name" )"
+    [ -n "$resolution" ] && tags="[${resolution,,}]"
+
+    [ -n "$tags" ] \
+        && echo " - $tags" \
+        || echo ""
+}
+
 function is_from_PSA() {
     local torrent_path="${1:?Missing: Torrent path}"
     torrent_path="${torrent_path%/}"
