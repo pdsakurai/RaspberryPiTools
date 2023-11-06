@@ -111,7 +111,8 @@ function process_tvshow(){
     : 'Expected structure #2:
     TV.Show.2022.S01E01.Title.of.episode.720p.+*HEVC-PSA.mkv'
         elif [[ "$torrent_path" =~ .mkv$ ]]; then
-            local -r file_name_cleaned="$( clean_text_using_sed "${torrent_path##*/}" )"
+            local -r tags_suffix="$( get_tags_suffix "${torrent_path##*/}" )"
+            local -r file_name_cleaned="$( clean_text_using_sed "${torrent_path##*/}" )$tags_suffix"
             local -r base_directory="$( get_base_directory "$torrent_path" )"
             local -r file_extension="$( get_file_extension "$torrent_path" )"
             local -r tv_show_title="$( printf "$file_name_cleaned" | sed "s/.S[0-9]\+E[0-9]\+.*//" )"
