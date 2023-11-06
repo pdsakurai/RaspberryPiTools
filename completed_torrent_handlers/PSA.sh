@@ -4,6 +4,8 @@
     && return \
     || readonly _PSA_sh="PSA.sh[$$]"
 
+readonly RE_RESOLUTION="\b\(\(?>216\|108\|72\)0p\)\b"
+
 function is_from_PSA() {
     local torrent_path="${1:?Missing: Torrent path}"
     torrent_path="${torrent_path%/}"
@@ -31,7 +33,7 @@ function clean_text_using_sed() {
     Line 4 - removal of alternative title prior "A K A " keyword followed by year indicator
     Lines 5-6 - Trim whitespaces at the edges'
     local -r common_sed_options_sequence=( \
-        "s/.\(216\|108\|72\)0p.*$//" \
+        "s/$RE_RESOLUTION.*$//" \
         "s/(\?\([0-9]\{4\}\))\?\(.*$\)/\(\1)\2/" \
         "s/\./ /g" \
         "s/A K A .*\(([0-9]\{4\})\)/\1/" \
