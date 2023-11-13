@@ -30,6 +30,7 @@ function is_from_PSA() {
     local torrent_path="${1:?Missing: Torrent path}"
     torrent_path="${torrent_path%/}"
     [[ "${torrent_path##*/}" =~ .HEVC-PSA ]] && return 0
+    [[ "${torrent_path##*/}" =~ \[eztv.re\] ]] && return 0
     return 1
 }
 
