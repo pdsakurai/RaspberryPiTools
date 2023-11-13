@@ -4,7 +4,7 @@
     && return \
     || readonly _PSA_sh="PSA.sh[$$]"
 
-readonly RE_RESOLUTION="\b\(\(?>216\|108\|72\)0p\)\b"
+readonly RE_RESOLUTION="\b\(\(216\|108\|72\)0p\)\b"
 
 function get_resolution() {
     local text="${1:?Missing: Text}"
