@@ -111,10 +111,10 @@ def extract_domain_name(
         while True:
             if matches := domain_name_pattern.match((yield)):
                 domain_names_extracted += 1
-                next_coro.send(matches["domain_name"])
                 if source_type == "domain as wildcard":
-                    domain_names_extracted += 1
                     next_coro.send(f'*.{matches["domain_name"]}')
+                else:
+                    next_coro.send(matches["domain_name"])
 
     finally:
         print(
