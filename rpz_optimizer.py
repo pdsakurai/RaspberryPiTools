@@ -32,7 +32,7 @@ def get_arguments() -> argparse.Namespace:
         "-t",
         "--source_type",
         **arg_characteristics,
-        choices=["domain", "host", "rpz non-wildcard only", "rpz wildcard only"],
+        choices=["domain", "domain as wildcard" "host", "rpz non-wildcard only", "rpz wildcard only"],
     )
 
     args = arg_parser.parse_args()
@@ -91,7 +91,7 @@ def extract_domain_name(
     source_type: str, next_coro: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, str, None]:
     def create_domain_name_pattern() -> re.Pattern:
-        if source_type == "domain":
+        if source_type == "domain" || source_type == "domain as wildcard":
             return re.compile(r"^(?!#)(?P<domain_name>\S+)")
         if source_type == "host":
             return re.compile(r"^(0.0.0.0)\s+(?!\1)(?P<domain_name>\S+)")
@@ -112,6 +112,10 @@ def extract_domain_name(
             if matches := domain_name_pattern.match((yield)):
                 domain_names_extracted += 1
                 next_coro.send(matches["domain_name"])
+                if source_type == "domain as wildcard":
+                    domain_names_extracted += 1
+                    next_coro.send(f'*.{matches["domain_name"]}')
+
     finally:
         print(
             f'Domain names extracted from "{source_type}"-formatted source: {domain_names_extracted:,}'
