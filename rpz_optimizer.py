@@ -113,13 +113,12 @@ def extract_domain_name(
         raise Exception(f"Invalid source_type: {source_type}")
 
     domain_name_pattern = create_domain_name_pattern()
-    domain_name_prefix = "*." if source_type == "domain as wildcard" else ""
     domain_names_extracted = 0
     try:
         while True:
             if matches := domain_name_pattern.match((yield)):
                 domain_names_extracted += 1
-                next_coro.send(f'{domain_name_prefix}{matches["domain_name"]}')
+                next_coro.send(matches["domain_name"].removeprefix("*."))
 
     finally:
         print(
@@ -260,7 +259,7 @@ def collect_wildcard_domains(sources) -> set[str]:
         duplicates_count = 0
         try:
             while True:
-                line = (yield).removeprefix("*.")
+                line = (yield)
                 if line not in database:
                     database.add(line)
                 else:
