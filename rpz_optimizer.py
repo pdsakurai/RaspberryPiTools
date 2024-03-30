@@ -136,10 +136,11 @@ def wildcard_miss_filter(
         while True:
             has_hit = False
             line = yield
-            parts = line.split(".")[1:]
-            while not has_hit and len(parts) >= 2:
-                has_hit = ".".join(parts) in database
-                parts = parts[1:]
+            parent = line.split(".")[1:]
+            while not has_hit and len(parent) >= 2:
+                has_hit = ".".join(parent) in database
+                parent = parent[1:]
+
             if has_hit:
                 duplicates_count += 1
             else:
