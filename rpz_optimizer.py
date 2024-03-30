@@ -249,12 +249,6 @@ def downloader(
 
 
 def collect_wildcard_domains(sources) -> set[str]:
-    sources = [
-        (url,type) 
-        for url, type in sources 
-        if type in wildcard_source_types
-    ]
-
     def collector(database):
         duplicates_count = 0
         try:
@@ -279,43 +273,54 @@ def collect_wildcard_domains(sources) -> set[str]:
     with PipedCoroutines(
         *extractors.values(), filter, collector
     ):
-        downloaders = deque(
-            (
-                downloader(url, type, extractors[type])
-                for url, type in sources
-            )
-        )
-
-        while downloaders:
-            item = downloaders.popleft()
-            try:
-                item.send(None)
-            except StopIteration:
-                pass
-            else:
-                downloaders.append(item)
+        start_downloading(sources, extractors)
     
     return database
+
+def start_downloading(sources, extractors):
+    downloaders = deque(
+        (
+            downloader(url, type, extractors[type])
+            for url, type in sources
+        )
+    )
+
+    while downloaders:
+        item = downloaders.popleft()
+        try:
+            item.send(None)
+        except StopIteration:
+            pass
+        else:
+            downloaders.append(item)
+
 
 
 if __name__ == "__main__":
     args = get_arguments()
-    sources = list(zip(args.source_url, args.source_type))
-    wildcard_domains = collect_wildcard_domains(sources)
 
-    sources = [
+    sources = list(zip(args.source_url, args.source_type))
+
+    wildcard_domains = collect_wildcard_domains([
         (url,type) 
-        for url, type in sources 
-        if type not in wildcard_source_types
-    ]
+        for url, type in sources
+        if type in wildcard_source_types
+    ])
+
     writer = writer(args.destination_file)
     rpz_entry_formatter = rpz_entry_formatter(rpz_actions[args.rpz_action], next_coro=writer)
     hasher = hasher(writer_coro=writer, next_coro=rpz_entry_formatter)
     unique_filter = unique_filter(next_coro=hasher)
     wildcard_miss_filter = wildcard_miss_filter(wildcard_domains, next_coro=unique_filter)
+
+    other_sources = [
+        (url,type) 
+        for url, type in sources 
+        if type in other_source_types
+    ]
     extractors = {
         type: extract_domain_name(type, next_coro=wildcard_miss_filter)
-        for _, type in sources
+        for _, type in other_sources
     }
 
     with PipedCoroutines(
@@ -326,22 +331,8 @@ if __name__ == "__main__":
         ):
             writer.send(line)
 
-        downloaders = deque(
-            (
-                downloader(url, type, extractors[type])
-                for url, type in sources
-            )
-        )
-
-        while downloaders:
-            item = downloaders.popleft()
-            try:
-                item.send(None)
-            except StopIteration:
-                pass
-            else:
-                downloaders.append(item)
-        
         for x in wildcard_domains:
             unique_filter.send(f'{x}')
             unique_filter.send(f'*.{x}')
+
+        start_downloading(other_sources, extractors)
