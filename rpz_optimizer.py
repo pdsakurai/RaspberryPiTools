@@ -16,6 +16,11 @@ rpz_actions={
     "null": "A 0.0.0.0"
 }
 
+wildcard_source_types=[
+    "domain as wildcard",
+    "rpz wildcard only"
+]
+
 
 def get_arguments() -> argparse.Namespace:
     arg_parser = argparse.ArgumentParser()
@@ -122,6 +127,27 @@ def extract_domain_name(
         )
 
 
+def wildcard_miss_filter(
+    database:set[str],
+    next_coro: typing.Coroutine[typing.Any, str, typing.Any]
+) -> typing.Coroutine[None, str, None]:
+    duplicates_count = 0
+    try:
+        while True:
+            has_hit = False
+            line = yield
+            parts = line.split(".")[1:]
+            while not has_hit and len(parts) >= 2:
+                has_hit = ".".join(parts) in database
+                parts = parts[1:]
+            if has_hit:
+                duplicates_count += 1
+            else:
+                next_coro.send(line)
+    finally:
+        print(f"Wildcard hits filtered out: {duplicates_count:,}")
+
+
 def unique_filter(
     next_coro: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, str, None]:
@@ -222,30 +248,41 @@ def downloader(
         print(f'Cannot process "{type}"-formatted source: {url}')
 
 
-if __name__ == "__main__":
-    args = get_arguments()
+def collect_wildcard_domains(sources) -> set[str]:
+    sources = [
+        (url,type) 
+        for url, type in sources 
+        if type in wildcard_source_types
+    ]
 
-    writer = writer(args.destination_file)
-    rpz_entry_formatter = rpz_entry_formatter(rpz_actions[args.rpz_action], next_coro=writer)
-    hasher = hasher(writer_coro=writer, next_coro=rpz_entry_formatter)
-    unique_filter = unique_filter(next_coro=hasher)
+    def collector(database):
+        duplicates_count = 0
+        try:
+            while True:
+                line = (yield).removeprefix("*.")
+                if line not in database:
+                    database.add(line)
+                else:
+                    duplicates_count += 1
+        finally:
+            print(f"Duplicate wildcards filtered out: {duplicates_count:,}")
+            print(f"Wildcard domains collected: {len(database):,}")
+
+    database = set()
+    collector = collector(database)
+    filter = wildcard_miss_filter(database, next_coro = collector)
     extractors = {
-        x: extract_domain_name(x, next_coro=unique_filter)
-        for x in set(args.source_type)
+        type : extract_domain_name(type, next_coro = filter)
+        for _, type in sources
     }
 
     with PipedCoroutines(
-        *extractors.values(), unique_filter, hasher, rpz_entry_formatter, writer
+        *extractors.values(), filter, collector
     ):
-        for line in header_generator(
-            args.source_url, args.name_server, args.email_address
-        ):
-            writer.send(line)
-
         downloaders = deque(
             (
-                downloader(source, type, extractors[type])
-                for source, type in zip(args.source_url, args.source_type)
+                downloader(url, type, extractors[type])
+                for url, type in sources
             )
         )
 
@@ -257,3 +294,54 @@ if __name__ == "__main__":
                 pass
             else:
                 downloaders.append(item)
+    
+    return database
+
+
+if __name__ == "__main__":
+    args = get_arguments()
+    sources = list(zip(args.source_url, args.source_type))
+    wildcard_domains = collect_wildcard_domains(sources)
+
+    sources = [
+        (url,type) 
+        for url, type in sources 
+        if type not in wildcard_source_types
+    ]
+    writer = writer(args.destination_file)
+    rpz_entry_formatter = rpz_entry_formatter(rpz_actions[args.rpz_action], next_coro=writer)
+    hasher = hasher(writer_coro=writer, next_coro=rpz_entry_formatter)
+    unique_filter = unique_filter(next_coro=hasher)
+    wildcard_miss_filter = wildcard_miss_filter(wildcard_domains, next_coro=unique_filter)
+    extractors = {
+        type: extract_domain_name(type, next_coro=wildcard_miss_filter)
+        for _, type in sources
+    }
+
+    with PipedCoroutines(
+        *extractors.values(), wildcard_miss_filter, unique_filter, hasher, rpz_entry_formatter, writer
+    ):
+        for line in header_generator(
+            args.source_url, args.name_server, args.email_address
+        ):
+            writer.send(line)
+
+        downloaders = deque(
+            (
+                downloader(url, type, extractors[type])
+                for url, type in sources
+            )
+        )
+
+        while downloaders:
+            item = downloaders.popleft()
+            try:
+                item.send(None)
+            except StopIteration:
+                pass
+            else:
+                downloaders.append(item)
+        
+        for x in wildcard_domains:
+            unique_filter.send(f'{x}')
+            unique_filter.send(f'*.{x}')
