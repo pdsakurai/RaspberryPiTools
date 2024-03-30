@@ -91,7 +91,7 @@ def extract_domain_name(
     source_type: str, next_coro: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, str, None]:
     def create_domain_name_pattern() -> re.Pattern:
-        if source_type == "domain" || source_type == "domain as wildcard":
+        if source_type == "domain" or source_type == "domain as wildcard":
             return re.compile(r"^(?!#)(?P<domain_name>\S+)")
         if source_type == "host":
             return re.compile(r"^(0.0.0.0)\s+(?!\1)(?P<domain_name>\S+)")
