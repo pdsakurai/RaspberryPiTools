@@ -1,30 +1,27 @@
-from collections import deque
-import hashlib
-import re
-from urllib import request
-from datetime import datetime, timedelta, timezone
-import argparse
-import tempfile
-import os
-import shutil
 import typing
 
 
-rpz_actions={
+rpz_actions = {
     "nodata": "CNAME .*",
     "nxdomain": "CNAME .",
     "null": "A 0.0.0.0"
 }
 
-wildcard_source_types=[
-    "domain as wildcard",
-    "rpz wildcard only"
-]
-other_source_types=[
-    "domain", "host", "rpz non-wildcard only"
-]
+source_types = {
+    "wildcard": [
+        "domain as wildcard",
+        "rpz wildcard only"
+    ],
+    "non-wildcard": [
+        "domain",
+        "host",
+        "rpz non-wildcard only"
+    ]
+}
 
-def get_arguments() -> argparse.Namespace:
+
+def get_arguments():
+    import argparse
     arg_parser = argparse.ArgumentParser()
 
     arg_characteristics = {"required": True, "type": str}
@@ -39,13 +36,13 @@ def get_arguments() -> argparse.Namespace:
         "-t",
         "--source_type",
         **arg_characteristics,
-        choices=[*wildcard_source_types,*other_source_types],
+        choices=[item for array in source_types.values() for item in array],
     )
 
     args = arg_parser.parse_args()
 
     if len(args.source_url) != len(args.source_type):
-        raise "Must have the same number of args for -s and -t"
+        raise Exception("Must have the same number of args for -s and -t")
 
     return args
 
@@ -55,6 +52,7 @@ def header_generator(
     primary_name_server: str,
     hostmaster_email_address: str,
 ) -> typing.Generator[str, None, None]:
+    from datetime import datetime, timedelta, timezone
     tz_manila = timezone(timedelta(hours=8))
     today = datetime.now(tz_manila).replace(microsecond=0)
     yield f"; Last modified: {today.isoformat()}"
@@ -97,7 +95,8 @@ def header_generator(
 def extract_domain_name(
     source_type: str, next_coro: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, str, None]:
-    def create_domain_name_pattern() -> re.Pattern:
+    def create_domain_name_pattern():
+        import re
         match (source_type):
             case "domain" | "domain as wildcard":
                 return re.compile(r"^(?!#)(?P<domain_name>\S+)")
@@ -107,36 +106,32 @@ def extract_domain_name(
                 return re.compile(r"^(?P<domain_name>(?=\w).+)(\s+CNAME\s+\.)", re.IGNORECASE)
             case "rpz wildcard only":
                 return re.compile(r"^(?P<domain_name>(?=\*\.).+)(\s+CNAME\s+\.)", re.IGNORECASE)
-            case _:
-                raise Exception(f"Invalid source_type: {source_type}")
 
-    domain_name_pattern = create_domain_name_pattern()
-    domain_names_extracted = 0
     try:
+        domain_name_pattern = create_domain_name_pattern()
+        domain_names_extracted = 0
         while True:
             if matches := domain_name_pattern.match((yield)):
                 domain_names_extracted += 1
                 next_coro.send(matches["domain_name"].removeprefix("*."))
 
     finally:
-        print(
-            f'Domain names extracted from "{source_type}"-formatted source: {domain_names_extracted:,}'
-        )
+        print(f'Domain names extracted from "{source_type}"-formatted source: {domain_names_extracted:,}')
 
 
 def wildcard_miss_filter(
     database:set[str],
     next_coro: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, str, None]:
-    duplicates_count = 0
     try:
+        duplicates_count = 0
         while True:
+            line = (yield)
+            parent = line.split(".")
             has_hit = False
-            line = yield
-            parent = line.split(".")[1:]
-            while not has_hit and len(parent) >= 2:
-                has_hit = ".".join(parent) in database
-                parent = parent[1:]
+
+            while len(parent := parent[1:]) >= 2 and not (has_hit:= ".".join(parent) in database):
+                pass
 
             if has_hit:
                 duplicates_count += 1
@@ -149,12 +144,11 @@ def wildcard_miss_filter(
 def unique_filter(
     next_coro: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, str, None]:
-    unique_domain_names = set()
-    duplicates_count = 0
     try:
+        unique_domain_names = set()
+        duplicates_count = 0
         while True:
-            line = yield
-            if line not in unique_domain_names:
+            if (line := (yield)) not in unique_domain_names:
                 unique_domain_names.add(line)
                 next_coro.send(line)
             else:
@@ -167,8 +161,9 @@ def hasher(
     writer_coro: typing.Coroutine[typing.Any, str, typing.Any],
     next_coro: typing.Coroutine[typing.Any, str, typing.Any],
 ) -> typing.Coroutine[None, str, None]:
-    hash = hashlib.md5()
     try:
+        import hashlib
+        hash = hashlib.md5()
         while True:
             line = yield
             hash.update(line.encode("utf-8"))
@@ -183,8 +178,8 @@ def rpz_entry_formatter(
     rpz_action: str,
     next_coro: typing.Coroutine[typing.Any, str, typing.Any],
 ) -> typing.Coroutine[None, str, None]:
-    formatted_counts = 0
     try:
+        formatted_counts = 0
         while True:
             next_coro.send(f"{(yield)} {rpz_action}")
             formatted_counts += 1
@@ -193,14 +188,17 @@ def rpz_entry_formatter(
 
 
 def writer(destination_file: str) -> typing.Coroutine[None, str, None]:
+    import tempfile
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file_fd, temp_file_path = tempfile.mkstemp(dir=temp_dir)
         print(f"Temporary file created: {temp_file_path}")
         try:
+            import os
             with os.fdopen(temp_file_fd, mode="w") as temp_file:
                 while True:
                     temp_file.write(f"{(yield)}\n")
         finally:
+            import re
             md5_pattern = re.compile(r"^;\smd5:\s(?P<hexdigest>\w+)")
 
             def get_md5(file_path: str) -> str:
@@ -213,6 +211,7 @@ def writer(destination_file: str) -> typing.Coroutine[None, str, None]:
                     return None
 
             if get_md5(destination_file) != get_md5(temp_file_path):
+                import shutil
                 shutil.move(temp_file_path, destination_file)
                 print(f"Temporary file moved to: {destination_file}")
             else:
@@ -236,6 +235,7 @@ def downloader(
     url: str, type: str, extractor: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, typing.Any, None]:
     try:
+        from urllib import request
         with request.urlopen(url) as src_file:
             print(f'Processing "{type}"-formatted source: {url}')
             for line in src_file:
@@ -248,11 +248,10 @@ def downloader(
 
 def collect_wildcard_domains(sources) -> set[str]:
     def collector(database):
-        duplicates_count = 0
         try:
+            duplicates_count = 0
             while True:
-                line = (yield)
-                if line not in database:
+                if (line := (yield)) not in database:
                     database.add(line)
                 else:
                     duplicates_count += 1
@@ -276,6 +275,7 @@ def collect_wildcard_domains(sources) -> set[str]:
     return database
 
 def start_downloading(sources, extractors):
+    from collections import deque
     downloaders = deque(
         (
             downloader(url, type, extractors[type])
@@ -302,7 +302,7 @@ if __name__ == "__main__":
     wildcard_domains = collect_wildcard_domains([
         (url,type) 
         for url, type in sources
-        if type in wildcard_source_types
+        if type in source_types["wildcard"]
     ])
 
     writer = writer(args.destination_file)
@@ -314,7 +314,7 @@ if __name__ == "__main__":
     other_sources = [
         (url,type) 
         for url, type in sources 
-        if type in other_source_types
+        if type in source_types["non-wildcard"]
     ]
     extractors = {
         type: extract_domain_name(type, next_coro=wildcard_miss_filter)
