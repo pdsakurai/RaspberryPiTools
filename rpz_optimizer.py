@@ -278,14 +278,14 @@ def collect_wildcard_domains(
             duplicates_count = 0
             while True:
                 if (line := (yield)) not in database:
-                    database.add(line)
+                    database.append(line)
                 else:
                     duplicates_count += 1
         finally:
             print(f"Duplicate wildcards filtered out: {duplicates_count:,}")
             print(f"Wildcard domains collected: {len(database):,}")
 
-    database = set()
+    database = []
     collector = collector(database)
     filter = wildcard_miss_filter(database, next_coro = collector)
     extractors = {
@@ -364,7 +364,7 @@ if __name__ == "__main__":
             for x in writers:
                 x.send(line)
 
-        for x in sorted(wildcard_domains):
+        for x in wildcard_domains:
             unique_filter.send(f'{x}')
             unique_filter.send(f'*.{x}')
 
