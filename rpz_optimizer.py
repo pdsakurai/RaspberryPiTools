@@ -1,12 +1,5 @@
 import typing
 
-
-rpz_actions = {
-    "nodata": "CNAME .*",
-    "nxdomain": "CNAME .",
-    "null": "A 0.0.0.0"
-}
-
 from enum import StrEnum, auto
 class SourceTypes(StrEnum):
     domain = auto()
@@ -29,6 +22,13 @@ source_types = {
         SourceTypes.host,
         SourceTypes.rpz_nonwildcard_only
     ]
+}
+
+
+rpz_actions = {
+    "nodata": "CNAME .*",
+    "nxdomain": "CNAME .",
+    "null": "A 0.0.0.0"
 }
 
 
@@ -109,7 +109,8 @@ def header_generator(
 
 
 def extract_domain_name(
-    source_type: str, next_coro: typing.Coroutine[typing.Any, str, typing.Any]
+    source_type: SourceTypes,
+    next_coro: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, str, None]:
     def create_domain_name_pattern():
         import re
@@ -136,7 +137,7 @@ def extract_domain_name(
 
 
 def wildcard_miss_filter(
-    database:set[str],
+    database: typing.Sequence[str],
     next_coro: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, str, None]:
     try:
@@ -174,8 +175,8 @@ def unique_filter(
 
 
 def hasher(
-    writer_coros: [typing.Coroutine[typing.Any, str, typing.Any]],
-    rpz_formatter_coros: [typing.Coroutine[typing.Any, str, typing.Any]],
+    rpz_formatter_coros: typing.Sequence[typing.Coroutine[typing.Any, str, typing.Any]],
+    writer_coros: typing.Sequence[typing.Coroutine[typing.Any, str, typing.Any]]
 ) -> typing.Coroutine[None, str, None]:
     try:
         import hashlib
@@ -202,7 +203,9 @@ def rpz_entry_formatter(
         next_coro.send(f"{(yield)} {rpz_action}")
 
 
-def writer(destination_file: str) -> typing.Coroutine[None, str, None]:
+def writer(
+    destination_file: str
+) -> typing.Coroutine[None, str, None]:
     import tempfile
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file_fd, temp_file_path = tempfile.mkstemp(dir=temp_dir)
@@ -216,7 +219,9 @@ def writer(destination_file: str) -> typing.Coroutine[None, str, None]:
             import re
             md5_pattern = re.compile(r"^;\smd5sum:\s(?P<hexdigest>\w+)")
 
-            def get_md5(file_path: str) -> str:
+            def get_md5(
+                file_path: str
+            ) -> str:
                 try:
                     with open(file_path) as file:
                         for line in file:
@@ -247,22 +252,28 @@ class PipedCoroutines:
 
 
 def downloader(
-    url: str, type: str, extractor: typing.Coroutine[typing.Any, str, typing.Any]
+    url: str,
+    source_type: SourceTypes,
+    extractor: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, typing.Any, None]:
     try:
         from urllib import request
         with request.urlopen(url) as src_file:
-            print(f'Processing "{type}"-formatted source: {url}')
+            print(f'Processing "{source_type}"-formatted source: {url}')
             for line in src_file:
                 (yield)
                 extractor.send(line.decode())
             print(f"Done processing: {url}")
     except request.URLError:
-        print(f'Cannot process "{type}"-formatted source: {url}')
+        print(f'Cannot process "{source_type}"-formatted source: {url}')
 
 
-def collect_wildcard_domains(sources) -> set[str]:
-    def collector(database):
+def collect_wildcard_domains(
+    sources : typing.Sequence[typing.Tuple[str, SourceTypes]]
+) -> typing.Sequence[str]:
+    def collector(
+        database : typing.Sequence[str]
+    ):
         try:
             duplicates_count = 0
             while True:
@@ -289,7 +300,11 @@ def collect_wildcard_domains(sources) -> set[str]:
     
     return database
 
-def start_downloading(sources, extractors):
+
+def start_downloading(
+    sources : typing.Sequence[typing.Tuple[str, SourceTypes]],
+    extractors : typing.Dict[SourceTypes,typing.Coroutine[None, str, None]]
+) -> None:
     from collections import deque
     downloaders = deque(
         (
@@ -306,7 +321,6 @@ def start_downloading(sources, extractors):
             pass
         else:
             downloaders.append(item)
-
 
 
 if __name__ == "__main__":
