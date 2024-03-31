@@ -1,7 +1,6 @@
 #!/bin/bash
 
 function update_rpz_files() {
-    local rpz_action=${1:?Missing: RPZ action type}
 
     local forked_process_ids=
     function record_forked_process() {
@@ -13,17 +12,17 @@ function update_rpz_files() {
         done
     }
 
-    local RPZ_OPTIMIZER_COMMON_OPTIONS="-a $rpz_action -n users.noreply.github.com -e 23254804+pdsakurai@users.noreply.github.com"
+    local rpz_actions="null,nxdomain"
+    local RPZ_OPTIMIZER_COMMON_OPTIONS="$( eval echo -a={$rpz_actions} ) -n users.noreply.github.com -e 23254804+pdsakurai@users.noreply.github.com"
     local RUN_RPZ_OPTIMIZER="python3 $GITHUB_DIR/RaspberryPiTools/rpz_optimizer.py $RPZ_OPTIMIZER_COMMON_OPTIONS"
-    local OUTPUT_DIR="$RPZ_DIR/$rpz_action"
 
-    $RUN_RPZ_OPTIMIZER -d "$OUTPUT_DIR/dns_bypass.rpz" \
+    $RUN_RPZ_OPTIMIZER $( eval echo -d=$RPZ_DIR/{$rpz_actions}/dns_bypass.rpz ) \
         -t "domain as wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/doh-onlydomains.txt" \
         -t "domain as wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/doh-vpn-proxy-bypass-onlydomains.txt" \
         -t "rpz non-wildcard only" -s "https://raw.githubusercontent.com/jpgpi250/piholemanual/master/DOH.rpz" &
     record_forked_process
 
-    $RUN_RPZ_OPTIMIZER -d "$OUTPUT_DIR/family_protection.rpz" \
+    $RUN_RPZ_OPTIMIZER $( eval echo -d=$RPZ_DIR/{$rpz_actions}/family_protection.rpz ) \
         -t "host" -s "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-only/hosts" \
         -t "host" -s "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/gambling-only/hosts" \
         -t "host" -s "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/porn-only/hosts" &
@@ -33,7 +32,7 @@ function update_rpz_files() {
 #       -t "host" -s "https://www.github.developerdan.com/hosts/lists/hate-and-junk-extended.txt"
     record_forked_process
 
-    $RUN_RPZ_OPTIMIZER -d "$OUTPUT_DIR/ads_and_trackers.rpz" \
+    $RUN_RPZ_OPTIMIZER $( eval echo -d=$RPZ_DIR/{$rpz_actions}/ads_and_trackers.rpz ) \
         -t "host" -s "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts" \
         -t "domain as wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/light-onlydomains.txt" \
         -t "domain as wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/popupads-onlydomains.txt" \
@@ -74,8 +73,7 @@ cd "$RPZ_DIR"
 git fetch --depth 1 origin master
 git reset --hard origin/master
 #git pull
-update_rpz_files "nxdomain"
-update_rpz_files "null"
+update_rpz_files
 are_there_changes && {
     git commit -a --message "Updated by cron.daily"
     git push
