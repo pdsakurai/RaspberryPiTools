@@ -75,6 +75,6 @@ git reset --hard origin/master
 #git pull
 update_rpz_files
 are_there_changes && {
-    git commit -a --message "Updated by cron.daily"
+    git commit -a --message "${1:-Updated by cron.daily}"
     git push
 }
