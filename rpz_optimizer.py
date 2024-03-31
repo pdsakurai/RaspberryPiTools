@@ -286,19 +286,28 @@ def collect_wildcard_domains(
             print(f"Wildcard domains collected: {len(database):,}")
 
     database = []
-    collector = collector(database)
-    filter = wildcard_miss_filter(database, next_coro = collector)
+    collector_1st_pass = collector(database)
+    filter_1st_pass = wildcard_miss_filter(database, next_coro = collector_1st_pass)
     extractors = {
-        type : extract_domain_name(type, next_coro = filter)
+        type : extract_domain_name(type, next_coro = filter_1st_pass)
         for _, type in sources
     }
 
     with PipedCoroutines(
-        *extractors.values(), filter, collector
+        *extractors.values(), filter_1st_pass, collector_1st_pass
     ):
         start_downloading(sources, extractors)
-    
-    return database
+
+    refined_database = []
+    collector_2nd_pass = collector(refined_database)
+    filter_2nd_pass = wildcard_miss_filter(database, next_coro = collector_2nd_pass)
+
+    with PipedCoroutines(
+        collector_2nd_pass, filter_2nd_pass
+    ):
+        for x in database:
+            filter_2nd_pass.send(x)
+    return refined_database
 
 
 def start_downloading(
