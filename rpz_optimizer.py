@@ -335,13 +335,7 @@ def start_downloading(
 if __name__ == "__main__":
     args = get_arguments()
 
-    sources = list(zip(args.source_url, args.source_type))
-
-    wildcard_domains = collect_wildcard_domains([
-        (url,type) 
-        for url, type in sources
-        if type in source_types[SourceTypesCategory.wildcard]
-    ])
+    coroutines = []
 
     writers = []
     rpz_entry_formatters = []
@@ -349,10 +343,25 @@ if __name__ == "__main__":
         x = writer(destination_file)
         writers.append(x)
         rpz_entry_formatters.append(rpz_entry_formatter(rpz_actions[rpz_action], next_coro=x))
+    coroutines.extend(writers)
+    coroutines.extend(rpz_entry_formatters)
 
-    hasher = hasher(writer_coros=writers, rpz_formatter_coros=rpz_entry_formatters)
-    unique_filter = unique_filter(next_coro=hasher)
-    wildcard_miss_filter = wildcard_miss_filter(wildcard_domains, next_coro=unique_filter)
+    next_coroutine = hasher = hasher(writer_coros=writers, rpz_formatter_coros=rpz_entry_formatters)
+    coroutines.append(next_coroutine)
+
+    next_coroutine = unique_filter(next_coro=next_coroutine)
+    coroutines.append(next_coroutine)
+
+    wildcard_domains = []
+    sources = list(zip(args.source_url, args.source_type))
+    if wildcard_sources := [
+        (url,type) 
+        for url, type in sources
+        if type in source_types[SourceTypesCategory.wildcard]
+    ]:
+        wildcard_domains = collect_wildcard_domains(wildcard_sources)
+        next_coroutine = wildcard_miss_filter(wildcard_domains, next_coro=next_coroutine)
+        coroutines.append(next_coroutine)   
 
     other_sources = [
         (url,type)
@@ -360,13 +369,13 @@ if __name__ == "__main__":
         if type in source_types[SourceTypesCategory.nonwildcard]
     ]
     extractors = {
-        type: extract_domain_name(type, next_coro=wildcard_miss_filter)
+        type: extract_domain_name(type, next_coro=next_coroutine)
         for _, type in other_sources
     }
+    coroutines.extend(extractors.values())
 
-    with PipedCoroutines(
-        *extractors.values(), wildcard_miss_filter, unique_filter, hasher, *rpz_entry_formatters, *writers
-    ):
+    coroutines.reverse()
+    with PipedCoroutines(*coroutines):
         for line in header_generator(
             args.source_url, args.name_server, args.email_address
         ):
