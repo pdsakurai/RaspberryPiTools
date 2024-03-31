@@ -98,19 +98,17 @@ def extract_domain_name(
     source_type: str, next_coro: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, str, None]:
     def create_domain_name_pattern() -> re.Pattern:
-        if source_type == "domain" or source_type == "domain as wildcard":
-            return re.compile(r"^(?!#)(?P<domain_name>\S+)")
-        if source_type == "host":
-            return re.compile(r"^(0.0.0.0)\s+(?!\1)(?P<domain_name>\S+)")
-        if source_type == "rpz non-wildcard only":
-            return re.compile(
-                r"^(?P<domain_name>(?=\w).+)(\s+CNAME\s+\.)", re.IGNORECASE
-            )
-        if source_type == "rpz wildcard only":
-            return re.compile(
-                r"^(?P<domain_name>(?=\*\.).+)(\s+CNAME\s+\.)", re.IGNORECASE
-            )
-        raise Exception(f"Invalid source_type: {source_type}")
+        match (source_type):
+            case "domain" | "domain as wildcard":
+                return re.compile(r"^(?!#)(?P<domain_name>\S+)")
+            case "host":
+                return re.compile(r"^(0.0.0.0)\s+(?!\1)(?P<domain_name>\S+)")
+            case "rpz non-wildcard only":
+                return re.compile(r"^(?P<domain_name>(?=\w).+)(\s+CNAME\s+\.)", re.IGNORECASE)
+            case "rpz wildcard only":
+                return re.compile(r"^(?P<domain_name>(?=\*\.).+)(\s+CNAME\s+\.)", re.IGNORECASE)
+            case _:
+                raise Exception(f"Invalid source_type: {source_type}")
 
     domain_name_pattern = create_domain_name_pattern()
     domain_names_extracted = 0
