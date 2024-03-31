@@ -176,7 +176,7 @@ def hasher(
             for x in rpz_formatter_coros:
                 x.send(line)
     finally:
-        hash = f"md5: {hash.hexdigest()}"
+        hash = f"md5sum: {hash.hexdigest()}"
         print(f"RPZ entries ({rpz_entry_counts:,}) {hash}")
         for x in writer_coros:
             x.send("")
@@ -202,7 +202,7 @@ def writer(destination_file: str) -> typing.Coroutine[None, str, None]:
                     temp_file.write(f"{(yield)}\n")
         finally:
             import re
-            md5_pattern = re.compile(r"^;\smd5:\s(?P<hexdigest>\w+)")
+            md5_pattern = re.compile(r"^;\smd5sum:\s(?P<hexdigest>\w+)")
 
             def get_md5(file_path: str) -> str:
                 try:
