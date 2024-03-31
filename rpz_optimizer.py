@@ -329,7 +329,7 @@ if __name__ == "__main__":
         ):
             writer.send(line)
 
-        for x in wildcard_domains:
+        for x in sorted(wildcard_domains):
             unique_filter.send(f'{x}')
             unique_filter.send(f'*.{x}')
 
