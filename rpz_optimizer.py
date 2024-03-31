@@ -222,12 +222,14 @@ def writer(
 
                     if cached_lines_count == cached_lines_max_count:
                         temp_file.write("\n".join(cached_lines))
+                        temp_file.write("\n")
                         cached_lines = []
                         cached_lines_count = 0
         finally:
             if cached_lines_count > 0:
                 with open(temp_file_path, mode="a") as temp_file:
                     temp_file.write("\n".join(cached_lines))
+                    temp_file.write("\n")
 
             import re
             md5_pattern = re.compile(r"^;\smd5sum:\s(?P<hexdigest>\w+)")
