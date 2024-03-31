@@ -162,11 +162,11 @@ def unique_filter(
     next_coro: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, str, None]:
     try:
-        unique_domain_names = set()
+        unique_domain_names = []
         duplicates_count = 0
         while True:
             if (line := (yield)) not in unique_domain_names:
-                unique_domain_names.add(line)
+                unique_domain_names.append(line)
                 next_coro.send(line)
             else:
                 duplicates_count += 1
