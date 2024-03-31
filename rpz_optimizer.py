@@ -210,12 +210,25 @@ def writer(
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file_fd, temp_file_path = tempfile.mkstemp(dir=temp_dir)
         print(f"Temporary file created: {temp_file_path}")
+        cached_lines = []
+        cached_lines_count = 0
         try:
             import os
             with os.fdopen(temp_file_fd, mode="w") as temp_file:
+                cached_lines_max_count = 10000
                 while True:
-                    temp_file.write(f"{(yield)}\n")
+                    cached_lines.append((yield))
+                    cached_lines_count += 1
+
+                    if cached_lines_count == cached_lines_max_count:
+                        temp_file.write("\n".join(cached_lines))
+                        cached_lines = []
+                        cached_lines_count = 0
         finally:
+            if cached_lines_count > 0:
+                with open(temp_file_path, mode="w") as temp_file:
+                    temp_file.write("\n".join(cached_lines))
+
             import re
             md5_pattern = re.compile(r"^;\smd5sum:\s(?P<hexdigest>\w+)")
 
@@ -361,7 +374,7 @@ if __name__ == "__main__":
     ]:
         wildcard_domains = collect_wildcard_domains(wildcard_sources)
         next_coroutine = wildcard_miss_filter(wildcard_domains, next_coro=next_coroutine)
-        coroutines.append(next_coroutine)   
+        coroutines.append(next_coroutine)
 
     other_sources = [
         (url,type)
