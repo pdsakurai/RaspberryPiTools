@@ -7,15 +7,27 @@ rpz_actions = {
     "null": "A 0.0.0.0"
 }
 
+from enum import StrEnum, auto
+class SourceTypes(StrEnum):
+    domain = auto()
+    domain_as_wildcard = auto()
+    host = auto()
+    rpz_nonwildcard_only = auto()
+    rpz_wildcard_only = auto()
+
+class SourceTypesCategory(StrEnum):
+    nonwildcard = auto()
+    wildcard = auto()
+
 source_types = {
-    "wildcard": [
-        "domain as wildcard",
-        "rpz wildcard only"
+    SourceTypesCategory.wildcard: [
+        SourceTypes.domain_as_wildcard,
+        SourceTypes.rpz_wildcard_only
     ],
-    "non-wildcard": [
-        "domain",
-        "host",
-        "rpz non-wildcard only"
+    SourceTypesCategory.nonwildcard: [
+        SourceTypes.domain,
+        SourceTypes.host,
+        SourceTypes.rpz_nonwildcard_only
     ]
 }
 
@@ -102,13 +114,13 @@ def extract_domain_name(
     def create_domain_name_pattern():
         import re
         match (source_type):
-            case "domain" | "domain as wildcard":
+            case SourceTypes.domain | SourceTypes.domain_as_wildcard:
                 return re.compile(r"^(?!#)(?P<domain_name>\S+)")
-            case "host":
+            case SourceTypes.host:
                 return re.compile(r"^(0.0.0.0)\s+(?!\1)(?P<domain_name>\S+)")
-            case "rpz non-wildcard only":
+            case SourceTypes.rpz_nonwildcard_only:
                 return re.compile(r"^(?P<domain_name>(?=\w).+)(\s+CNAME\s+\.)", re.IGNORECASE)
-            case "rpz wildcard only":
+            case SourceTypes.rpz_wildcard_only:
                 return re.compile(r"^(?P<domain_name>(?=\*\.).+)(\s+CNAME\s+\.)", re.IGNORECASE)
 
     try:
@@ -305,7 +317,7 @@ if __name__ == "__main__":
     wildcard_domains = collect_wildcard_domains([
         (url,type) 
         for url, type in sources
-        if type in source_types["wildcard"]
+        if type in source_types[SourceTypesCategory.wildcard]
     ])
 
     writers = []
@@ -320,9 +332,9 @@ if __name__ == "__main__":
     wildcard_miss_filter = wildcard_miss_filter(wildcard_domains, next_coro=unique_filter)
 
     other_sources = [
-        (url,type) 
+        (url,type)
         for url, type in sources 
-        if type in source_types["non-wildcard"]
+        if type in source_types[SourceTypesCategory.nonwildcard]
     ]
     extractors = {
         type: extract_domain_name(type, next_coro=wildcard_miss_filter)
