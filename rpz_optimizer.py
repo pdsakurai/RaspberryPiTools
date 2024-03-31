@@ -162,21 +162,23 @@ def unique_filter(
 
 
 def hasher(
-    writer_coro: [typing.Coroutine[typing.Any, str, typing.Any]],
-    next_coro: [typing.Coroutine[typing.Any, str, typing.Any]],
+    writer_coros: [typing.Coroutine[typing.Any, str, typing.Any]],
+    rpz_formatter_coros: [typing.Coroutine[typing.Any, str, typing.Any]],
 ) -> typing.Coroutine[None, str, None]:
     try:
         import hashlib
         hash = hashlib.md5()
+        rpz_entry_counts = 0
         while True:
             line = yield
             hash.update(line.encode("utf-8"))
-            for x in next_coro:
+            rpz_entry_counts += 1
+            for x in rpz_formatter_coros:
                 x.send(line)
     finally:
         hash = f"md5: {hash.hexdigest()}"
-        print(f"RPZ entries' {hash}")
-        for x in writer_coro:
+        print(f"RPZ entries ({rpz_entry_counts:,}) {hash}")
+        for x in writer_coros:
             x.send("")
             x.send(f"; {hash}")
 
@@ -184,13 +186,8 @@ def rpz_entry_formatter(
     rpz_action: str,
     next_coro: typing.Coroutine[typing.Any, str, typing.Any],
 ) -> typing.Coroutine[None, str, None]:
-    try:
-        formatted_counts = 0
-        while True:
-            next_coro.send(f"{(yield)} {rpz_action}")
-            formatted_counts += 1
-    finally:
-        print(f"RPZ-formatted entries: {formatted_counts:,}")
+    while True:
+        next_coro.send(f"{(yield)} {rpz_action}")
 
 
 def writer(destination_file: str) -> typing.Coroutine[None, str, None]:
@@ -316,10 +313,9 @@ if __name__ == "__main__":
     for destination_file, rpz_action in zip(args.destination_file, args.rpz_action):
         x = writer(destination_file)
         writers.append(x)
-        y = rpz_entry_formatter(rpz_actions[rpz_action], next_coro=x)
-        rpz_entry_formatters.append(y)
+        rpz_entry_formatters.append(rpz_entry_formatter(rpz_actions[rpz_action], next_coro=x))
 
-    hasher = hasher(writer_coro=writers, next_coro=rpz_entry_formatters)
+    hasher = hasher(writer_coros=writers, rpz_formatter_coros=rpz_entry_formatters)
     unique_filter = unique_filter(next_coro=hasher)
     wildcard_miss_filter = wildcard_miss_filter(wildcard_domains, next_coro=unique_filter)
 
