@@ -383,7 +383,7 @@ if __name__ == "__main__":
                 x.send(line)
 
         for x in wildcard_domains:
-            unique_filter.send(f'{x}')
-            unique_filter.send(f'*.{x}')
+            hasher.send(f'{x}')
+            hasher.send(f'*.{x}')
 
         start_downloading(other_sources, extractors)
