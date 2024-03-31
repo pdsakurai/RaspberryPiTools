@@ -27,10 +27,11 @@ def get_arguments():
     arg_characteristics = {"required": True, "type": str}
     arg_parser.add_argument("-n", "--name_server", **arg_characteristics)
     arg_parser.add_argument("-e", "--email_address", **arg_characteristics)
+
+    arg_characteristics.setdefault("action", "append")
     arg_parser.add_argument("-d", "--destination_file", **arg_characteristics)
     arg_parser.add_argument("-a", "--rpz_action", **arg_characteristics, choices=list(rpz_actions.keys()))
 
-    arg_characteristics.setdefault("action", "append")
     arg_parser.add_argument("-s", "--source_url", **arg_characteristics)
     arg_parser.add_argument(
         "-t",
@@ -40,6 +41,9 @@ def get_arguments():
     )
 
     args = arg_parser.parse_args()
+
+    if len(args.destination_file) != len(args.rpz_action):
+        raise Exception("Must have the same number of args for -d and -a")
 
     if len(args.source_url) != len(args.source_type):
         raise Exception("Must have the same number of args for -s and -t")
@@ -158,8 +162,8 @@ def unique_filter(
 
 
 def hasher(
-    writer_coro: typing.Coroutine[typing.Any, str, typing.Any],
-    next_coro: typing.Coroutine[typing.Any, str, typing.Any],
+    writer_coro: [typing.Coroutine[typing.Any, str, typing.Any]],
+    next_coro: [typing.Coroutine[typing.Any, str, typing.Any]],
 ) -> typing.Coroutine[None, str, None]:
     try:
         import hashlib
@@ -167,12 +171,14 @@ def hasher(
         while True:
             line = yield
             hash.update(line.encode("utf-8"))
-            next_coro.send(line)
+            for x in next_coro:
+                x.send(line)
     finally:
         hash = f"md5: {hash.hexdigest()}"
         print(f"RPZ entries' {hash}")
-        writer_coro.send("")
-        writer_coro.send(f"; {hash}")
+        for x in writer_coro:
+            x.send("")
+            x.send(f"; {hash}")
 
 def rpz_entry_formatter(
     rpz_action: str,
@@ -305,9 +311,15 @@ if __name__ == "__main__":
         if type in source_types["wildcard"]
     ])
 
-    writer = writer(args.destination_file)
-    rpz_entry_formatter = rpz_entry_formatter(rpz_actions[args.rpz_action], next_coro=writer)
-    hasher = hasher(writer_coro=writer, next_coro=rpz_entry_formatter)
+    writers = []
+    rpz_entry_formatters = []
+    for destination_file, rpz_action in zip(args.destination_file, args.rpz_action):
+        x = writer(destination_file)
+        writers.append(x)
+        y = rpz_entry_formatter(rpz_actions[rpz_action], next_coro=x)
+        rpz_entry_formatters.append(y)
+
+    hasher = hasher(writer_coro=writers, next_coro=rpz_entry_formatters)
     unique_filter = unique_filter(next_coro=hasher)
     wildcard_miss_filter = wildcard_miss_filter(wildcard_domains, next_coro=unique_filter)
 
@@ -322,12 +334,13 @@ if __name__ == "__main__":
     }
 
     with PipedCoroutines(
-        *extractors.values(), wildcard_miss_filter, unique_filter, hasher, rpz_entry_formatter, writer
+        *extractors.values(), wildcard_miss_filter, unique_filter, hasher, *rpz_entry_formatters, *writers
     ):
         for line in header_generator(
             args.source_url, args.name_server, args.email_address
         ):
-            writer.send(line)
+            for x in writers:
+                x.send(line)
 
         for x in sorted(wildcard_domains):
             unique_filter.send(f'{x}')
