@@ -226,7 +226,7 @@ def writer(
                         cached_lines_count = 0
         finally:
             if cached_lines_count > 0:
-                with open(temp_file_path, mode="w") as temp_file:
+                with open(temp_file_path, mode="a") as temp_file:
                     temp_file.write("\n".join(cached_lines))
 
             import re
