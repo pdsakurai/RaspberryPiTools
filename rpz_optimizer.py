@@ -349,7 +349,7 @@ if __name__ == "__main__":
     next_coroutine = hasher = hasher(writer_coros=writers, rpz_formatter_coros=rpz_entry_formatters)
     coroutines.append(next_coroutine)
 
-    next_coroutine = unique_filter(next_coro=next_coroutine)
+    next_coroutine = unique_filter = unique_filter(next_coro=next_coroutine)
     coroutines.append(next_coroutine)
 
     wildcard_domains = []
