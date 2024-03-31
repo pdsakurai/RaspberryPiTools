@@ -215,7 +215,7 @@ def writer(
         try:
             import os
             with os.fdopen(temp_file_fd, mode="w") as temp_file:
-                cached_lines_max_count = 10000
+                cached_lines_max_count = 100000
                 while True:
                     cached_lines.append((yield))
                     cached_lines_count += 1
