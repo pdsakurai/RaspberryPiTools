@@ -17,9 +17,9 @@ function update_rpz_files() {
     local RUN_RPZ_OPTIMIZER="python3 $GITHUB_DIR/RaspberryPiTools/rpz_optimizer.py $RPZ_OPTIMIZER_COMMON_OPTIONS"
 
     $RUN_RPZ_OPTIMIZER $( eval echo -d=$RPZ_DIR/{$rpz_actions}/dns_bypass.rpz ) \
-        -t "domain as wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/doh-onlydomains.txt" \
-        -t "domain as wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/doh-vpn-proxy-bypass-onlydomains.txt" \
-        -t "rpz non-wildcard only" -s "https://raw.githubusercontent.com/jpgpi250/piholemanual/master/DOH.rpz" &
+        -t "domain_as_wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/doh-onlydomains.txt" \
+        -t "domain_as_wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/doh-vpn-proxy-bypass-onlydomains.txt" \
+        -t "rpz_nonwildcard_only" -s "https://raw.githubusercontent.com/jpgpi250/piholemanual/master/DOH.rpz" &
     record_forked_process
 
     $RUN_RPZ_OPTIMIZER $( eval echo -d=$RPZ_DIR/{$rpz_actions}/family_protection.rpz ) \
@@ -34,16 +34,16 @@ function update_rpz_files() {
 
     $RUN_RPZ_OPTIMIZER $( eval echo -d=$RPZ_DIR/{$rpz_actions}/ads_and_trackers.rpz ) \
         -t "host" -s "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts" \
-        -t "domain as wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/light-onlydomains.txt" \
-        -t "domain as wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/popupads-onlydomains.txt" \
-        -t "domain as wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.amazon-onlydomains.txt" \
-        -t "domain as wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.apple-onlydomains.txt" \
-        -t "domain as wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.huawei-onlydomains.txt" \
-        -t "domain as wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.winoffice-onlydomains.txt" \
-        -t "domain as wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.tiktok-onlydomains.txt" \
-        -t "domain as wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.lgwebos-onlydomains.txt" \
-        -t "domain as wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.vivo-onlydomains.txt" \
-        -t "domain as wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.oppo-realme-onlydomains.txt" \
+        -t "domain_as_wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/light-onlydomains.txt" \
+        -t "domain_as_wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/popupads-onlydomains.txt" \
+        -t "domain_as_wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.amazon-onlydomains.txt" \
+        -t "domain_as_wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.apple-onlydomains.txt" \
+        -t "domain_as_wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.huawei-onlydomains.txt" \
+        -t "domain_as_wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.winoffice-onlydomains.txt" \
+        -t "domain_as_wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.tiktok-onlydomains.txt" \
+        -t "domain_as_wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.lgwebos-onlydomains.txt" \
+        -t "domain_as_wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.vivo-onlydomains.txt" \
+        -t "domain_as_wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.oppo-realme-onlydomains.txt" \
         -t "host" -s "https://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Extension/GoodbyeAds-Samsung-AdBlock.txt" \
         -t "host" -s "https://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Extension/GoodbyeAds-Xiaomi-Extension.txt" \
         -t "domain" -s "https://raw.githubusercontent.com/nextdns/native-tracking-domains/main/domains/samsung" \
