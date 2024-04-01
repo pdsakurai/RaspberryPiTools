@@ -230,6 +230,7 @@ def writer(
                 with open(temp_file_path, mode="a") as temp_file:
                     temp_file.write("\n".join(cached_lines))
                     temp_file.write("\n")
+                cached_lines = []
 
             import re
             md5_pattern = re.compile(r"^;\smd5sum:\s(?P<hexdigest>\w+)")
