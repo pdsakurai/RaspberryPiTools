@@ -211,21 +211,18 @@ def writer(
         temp_file_fd, temp_file_path = tempfile.mkstemp(dir=temp_dir)
         print(f"Temporary file created: {temp_file_path}")
         cached_lines = []
-        cached_lines_count = 0
         try:
             import os
             with os.fdopen(temp_file_fd, mode="w") as temp_file:
                 cached_lines_max_count = 50000
                 while True:
                     cached_lines.append(f'{(yield)}\n')
-                    cached_lines_count += 1
 
-                    if cached_lines_count == cached_lines_max_count:
+                    if len(cached_lines) == cached_lines_max_count:
                         temp_file.writelines(cached_lines)
                         cached_lines = []
-                        cached_lines_count = 0
         finally:
-            if cached_lines_count > 0:
+            if cached_lines:
                 with open(temp_file_path, mode="a") as temp_file:
                     temp_file.writelines(cached_lines)
                 cached_lines = []
