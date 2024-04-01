@@ -217,19 +217,17 @@ def writer(
             with os.fdopen(temp_file_fd, mode="w") as temp_file:
                 cached_lines_max_count = 50000
                 while True:
-                    cached_lines.append((yield))
+                    cached_lines.append(f'{(yield)}\n')
                     cached_lines_count += 1
 
                     if cached_lines_count == cached_lines_max_count:
-                        temp_file.write("\n".join(cached_lines))
-                        temp_file.write("\n")
+                        temp_file.writelines(cached_lines)
                         cached_lines = []
                         cached_lines_count = 0
         finally:
             if cached_lines_count > 0:
                 with open(temp_file_path, mode="a") as temp_file:
-                    temp_file.write("\n".join(cached_lines))
-                    temp_file.write("\n")
+                    temp_file.writelines(cached_lines)
                 cached_lines = []
 
             import re
