@@ -179,8 +179,8 @@ def hasher(
     writer_coros: typing.Sequence[typing.Coroutine[typing.Any, str, typing.Any]]
 ) -> typing.Coroutine[None, str, None]:
     try:
-        import hashlib
-        hash = hashlib.md5()
+        from hashlib import md5
+        hash = md5()
         rpz_entry_counts = 0
         while True:
             line = yield
