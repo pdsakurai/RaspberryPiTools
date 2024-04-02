@@ -209,7 +209,9 @@ def rpz_entry_formatter(
 
 
 def writer(
-    destination_file: str
+    *,
+    destination_file: str,
+    processing_duration : typing.Callable[[None], str] = None
 ) -> typing.Coroutine[None, str, None]:
     from tempfile import mkstemp
     temp_file_fd, temp_file_path = mkstemp()
@@ -229,6 +231,9 @@ def writer(
                 if len(cached_lines) == cached_lines_max_count:
                     flush_cached_lines(temp_file)
     finally:
+        if processing_duration:
+            cached_lines.append(processing_duration())
+
         if cached_lines:
             with open(temp_file_path, mode="a") as temp_file:
                 flush_cached_lines(temp_file)
@@ -352,14 +357,20 @@ def start_downloading(
 
 
 if __name__ == "__main__":
+    def get_processing_duration() -> typing.Callable[[None],str]:
+        from datetime import datetime
+        start = datetime.now()
+        return lambda : f"; Processed in: {datetime.now() - start}"
+    get_processing_duration = get_processing_duration()
+
     args = get_arguments()
 
     coroutines = []
 
     writers = []
     rpz_entry_formatters = []
-    for destination_file, rpz_action in zip(args.destination_file, args.rpz_action):
-        x = writer(destination_file)
+    for d, rpz_action in zip(args.destination_file, args.rpz_action):
+        x = writer(destination_file=d, processing_duration=get_processing_duration)
         writers.append(x)
         rpz_entry_formatters.append(rpz_entry_formatter(rpz_actions[rpz_action], next_coro=x))
     coroutines.extend(writers)
