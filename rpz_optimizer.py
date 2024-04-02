@@ -375,14 +375,14 @@ if __name__ == "__main__":
         coroutines.append(next_coroutine)
         wildcard_sources = []
 
-    other_sources = [
+    sources = [
         (url,type)
         for url, type in sources 
         if type in source_types[SourceTypesCategory.nonwildcard]
     ]
     extractors = {
         type: extract_domain_name(type, next_coro=next_coroutine)
-        for _, type in other_sources
+        for _, type in sources
     }
     coroutines.extend(extractors.values())
 
@@ -398,4 +398,4 @@ if __name__ == "__main__":
             unique_filter.send(f'{x}')
             hasher.send(f'*.{x}')
 
-        start_downloading(other_sources, extractors)
+        start_downloading(sources, extractors)
