@@ -227,19 +227,22 @@ def writer(
                 temp_file.writelines(cached_lines)
             cached_lines = []
 
-        import re
-        md5_pattern = re.compile(r"^;\smd5sum:\s(?P<hexdigest>\w+)")
+        def get_md5() -> typing.Callable[[str], str]:
+            from re import compile
+            md5_pattern = compile(r"^;\smd5sum:\s(?P<hexdigest>\w+)")
 
-        def get_md5(
-            file_path: str
-        ) -> str:
-            try:
-                with open(file_path) as file:
-                    for line in file:
-                        if found_md5 := md5_pattern.match(line):
-                            return found_md5["hexdigest"]
-            except OSError:
-                return None
+            def _impl(
+                file_path: str
+            ) -> str:
+                try:
+                    with open(file_path) as file:
+                        for line in file:
+                            if found_md5 := md5_pattern.match(line):
+                                return found_md5["hexdigest"]
+                except OSError:
+                    return None
+            return _impl
+        get_md5 = get_md5()
 
         if get_md5(destination_file) != get_md5(temp_file_path):
             import shutil
