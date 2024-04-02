@@ -113,16 +113,16 @@ def extract_domain_name(
     next_coro: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, str, None]:
     def create_domain_name_pattern():
-        import re
+        from re import compile, IGNORECASE
         match (source_type):
             case SourceTypes.domain | SourceTypes.domain_as_wildcard:
-                return re.compile(r"^(?!#)(?P<domain_name>\S+)")
+                return compile(r"^(?!#)(?P<domain_name>\S+)")
             case SourceTypes.host:
-                return re.compile(r"^(0.0.0.0)\s+(?!\1)(?P<domain_name>\S+)")
+                return compile(r"^(0.0.0.0)\s+(?!\1)(?P<domain_name>\S+)")
             case SourceTypes.rpz_nonwildcard_only:
-                return re.compile(r"^(?P<domain_name>(?=\w).+)(\s+CNAME\s+\.)", re.IGNORECASE)
+                return compile(r"^(?P<domain_name>(?=\w).+)(\s+CNAME\s+\.)", IGNORECASE)
             case SourceTypes.rpz_wildcard_only:
-                return re.compile(r"^(?P<domain_name>(?=\*\.).+)(\s+CNAME\s+\.)", re.IGNORECASE)
+                return compile(r"^(?P<domain_name>(?=\*\.).+)(\s+CNAME\s+\.)", IGNORECASE)
 
     try:
         domain_name_pattern = create_domain_name_pattern()
