@@ -212,8 +212,8 @@ def writer(
     print(f"Temporary file created: {temp_file_path}")
     cached_lines = []
     try:
-        import os
-        with os.fdopen(temp_file_fd, mode="w") as temp_file:
+        from os import fdopen
+        with fdopen(temp_file_fd, mode="w") as temp_file:
             cached_lines_max_count = 50000
             while True:
                 cached_lines.append(f'{(yield)}\n')
