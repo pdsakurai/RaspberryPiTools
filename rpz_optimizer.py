@@ -245,8 +245,8 @@ def writer(
         get_md5 = get_md5()
 
         if get_md5(destination_file) != get_md5(temp_file_path):
-            import shutil
-            shutil.move(temp_file_path, destination_file)
+            from shutil import move
+            move(temp_file_path, destination_file)
             print(f"Temporary file moved to: {destination_file}")
         else:
             print("Nothing changed; Deleting created temporary file")
