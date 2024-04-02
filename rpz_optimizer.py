@@ -159,19 +159,23 @@ def wildcard_miss_filter(
 
 
 def unique_filter(
-    next_coro: typing.Coroutine[typing.Any, str, typing.Any]
+    *,
+    what_are_filtered_out: str = None,
+    database: typing.Sequence[str] = [],
+    next_coro: typing.Coroutine[typing.Any, str, typing.Any] = None
 ) -> typing.Coroutine[None, str, None]:
     try:
-        unique_domain_names = []
         duplicates_count = 0
         while True:
-            if (line := (yield)) not in unique_domain_names:
-                unique_domain_names.append(line)
-                next_coro.send(line)
+            if (line := (yield)) not in database:
+                database.append(line)
+                if next_coro:
+                    next_coro.send(line)
             else:
                 duplicates_count += 1
     finally:
-        print(f"Duplicates filtered out: {duplicates_count:,}")
+        if what_are_filtered_out:
+            print(f"Duplicate {what_are_filtered_out} filtered out: {duplicates_count:,}")
 
 
 def hasher(
@@ -298,18 +302,8 @@ def downloader(
 def collect_wildcard_domains(
     sources : typing.Sequence[typing.Tuple[str, SourceTypes]]
 ) -> typing.Sequence[str]:
-    def collector(
-        database : typing.Sequence[str]
-    ):
-        try:
-            while True:
-                if (line := (yield)) not in database:
-                    database.append(line)
-        finally:
-            pass
-
     database_1stpass = []
-    collector_coro = collector(database_1stpass)
+    collector_coro = unique_filter(database=database_1stpass)
     filter_coro = wildcard_miss_filter(database_1stpass, next_coro = collector_coro)
     extractor_coros = {
         type : extract_domain_name(type, next_coro = filter_coro)
@@ -322,7 +316,7 @@ def collect_wildcard_domains(
         start_downloading(sources, extractor_coros)
 
     database_2ndpass = []
-    collector_coro = collector(database_2ndpass)
+    collector_coro = unique_filter(database=database_2ndpass)
     filter_coro = wildcard_miss_filter(database_1stpass, next_coro = collector_coro)
 
     with PipedCoroutines(
@@ -374,7 +368,7 @@ if __name__ == "__main__":
     next_coroutine = hasher = hasher(writer_coros=writers, rpz_formatter_coros=rpz_entry_formatters)
     coroutines.append(next_coroutine)
 
-    next_coroutine = unique_filter = unique_filter(next_coro=next_coroutine)
+    next_coroutine = collector = unique_filter(next_coro=next_coroutine, what_are_filtered_out="domains")
     coroutines.append(next_coroutine)
 
     wildcard_domains = []
@@ -409,7 +403,7 @@ if __name__ == "__main__":
                 x.send(line)
 
         for x in wildcard_domains:
-            unique_filter.send(f'{x}')
+            collector.send(f'{x}')
             hasher.send(f'*.{x}')
 
         start_downloading(sources, extractors)
