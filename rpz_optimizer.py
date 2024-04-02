@@ -33,8 +33,8 @@ rpz_actions = {
 
 
 def get_arguments():
-    import argparse
-    arg_parser = argparse.ArgumentParser()
+    from argparse import ArgumentParser
+    arg_parser = ArgumentParser()
 
     arg_characteristics = {"required": True, "type": str}
     arg_parser.add_argument("-n", "--name_server", **arg_characteristics)
