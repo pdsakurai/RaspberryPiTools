@@ -210,22 +210,24 @@ def writer(
     from tempfile import mkstemp
     temp_file_fd, temp_file_path = mkstemp()
     print(f"Temporary file created: {temp_file_path}")
+
     cached_lines = []
+    def flush_cached_lines(file:typing.TextIO) -> None:
+        file.writelines(cached_lines)
+        cached_lines.clear()
+
     try:
         from os import fdopen
         with fdopen(temp_file_fd, mode="w") as temp_file:
             cached_lines_max_count = 50000
             while True:
                 cached_lines.append(f'{(yield)}\n')
-
                 if len(cached_lines) == cached_lines_max_count:
-                    temp_file.writelines(cached_lines)
-                    cached_lines = []
+                    flush_cached_lines(temp_file)
     finally:
         if cached_lines:
             with open(temp_file_path, mode="a") as temp_file:
-                temp_file.writelines(cached_lines)
-            cached_lines = []
+                flush_cached_lines(temp_file)
 
         def get_md5() -> typing.Callable[[str], str]:
             from re import compile
