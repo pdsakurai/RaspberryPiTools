@@ -373,6 +373,7 @@ if __name__ == "__main__":
         wildcard_domains = collect_wildcard_domains(wildcard_sources)
         next_coroutine = wildcard_miss_filter(wildcard_domains, next_coro=next_coroutine)
         coroutines.append(next_coroutine)
+        wildcard_sources = []
 
     other_sources = [
         (url,type)
