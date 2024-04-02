@@ -207,47 +207,46 @@ def rpz_entry_formatter(
 def writer(
     destination_file: str
 ) -> typing.Coroutine[None, str, None]:
-    import tempfile
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_file_fd, temp_file_path = tempfile.mkstemp(dir=temp_dir)
-        print(f"Temporary file created: {temp_file_path}")
-        cached_lines = []
-        try:
-            import os
-            with os.fdopen(temp_file_fd, mode="w") as temp_file:
-                cached_lines_max_count = 50000
-                while True:
-                    cached_lines.append(f'{(yield)}\n')
+    from tempfile import mkstemp
+    temp_file_fd, temp_file_path = mkstemp()
+    print(f"Temporary file created: {temp_file_path}")
+    cached_lines = []
+    try:
+        import os
+        with os.fdopen(temp_file_fd, mode="w") as temp_file:
+            cached_lines_max_count = 50000
+            while True:
+                cached_lines.append(f'{(yield)}\n')
 
-                    if len(cached_lines) == cached_lines_max_count:
-                        temp_file.writelines(cached_lines)
-                        cached_lines = []
-        finally:
-            if cached_lines:
-                with open(temp_file_path, mode="a") as temp_file:
+                if len(cached_lines) == cached_lines_max_count:
                     temp_file.writelines(cached_lines)
-                cached_lines = []
+                    cached_lines = []
+    finally:
+        if cached_lines:
+            with open(temp_file_path, mode="a") as temp_file:
+                temp_file.writelines(cached_lines)
+            cached_lines = []
 
-            import re
-            md5_pattern = re.compile(r"^;\smd5sum:\s(?P<hexdigest>\w+)")
+        import re
+        md5_pattern = re.compile(r"^;\smd5sum:\s(?P<hexdigest>\w+)")
 
-            def get_md5(
-                file_path: str
-            ) -> str:
-                try:
-                    with open(file_path) as file:
-                        for line in file:
-                            if found_md5 := md5_pattern.match(line):
-                                return found_md5["hexdigest"]
-                except OSError:
-                    return None
+        def get_md5(
+            file_path: str
+        ) -> str:
+            try:
+                with open(file_path) as file:
+                    for line in file:
+                        if found_md5 := md5_pattern.match(line):
+                            return found_md5["hexdigest"]
+            except OSError:
+                return None
 
-            if get_md5(destination_file) != get_md5(temp_file_path):
-                import shutil
-                shutil.move(temp_file_path, destination_file)
-                print(f"Temporary file moved to: {destination_file}")
-            else:
-                print("Nothing changed; Deleting created temporary file")
+        if get_md5(destination_file) != get_md5(temp_file_path):
+            import shutil
+            shutil.move(temp_file_path, destination_file)
+            print(f"Temporary file moved to: {destination_file}")
+        else:
+            print("Nothing changed; Deleting created temporary file")
 
 
 class PipedCoroutines:
