@@ -251,7 +251,7 @@ def writer(
             move(temp_file_path, destination_file)
             print(f"Temporary file moved to: {destination_file}")
         else:
-            print("Nothing changed; Deleting created temporary file")
+            print("Nothing changed; Deleting temporary file")
 
 
 class PipedCoroutines:
