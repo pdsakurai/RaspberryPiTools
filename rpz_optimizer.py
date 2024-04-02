@@ -195,6 +195,7 @@ def hasher(
             x.send("")
             x.send(f"; {hash}")
 
+
 def rpz_entry_formatter(
     rpz_action: str,
     next_coro: typing.Coroutine[typing.Any, str, typing.Any],
@@ -286,39 +287,37 @@ def collect_wildcard_domains(
         database : typing.Sequence[str]
     ):
         try:
-            duplicates_count = 0
             while True:
                 if (line := (yield)) not in database:
                     database.append(line)
-                else:
-                    duplicates_count += 1
         finally:
-            print(f"Duplicate wildcards filtered out: {duplicates_count:,}")
-            print(f"Wildcard domains collected: {len(database):,}")
+            pass
 
-    database = []
-    collector_1st_pass = collector(database)
-    filter_1st_pass = wildcard_miss_filter(database, next_coro = collector_1st_pass)
-    extractors = {
-        type : extract_domain_name(type, next_coro = filter_1st_pass)
+    database_1stpass = []
+    collector_coro = collector(database_1stpass)
+    filter_coro = wildcard_miss_filter(database_1stpass, next_coro = collector_coro)
+    extractor_coros = {
+        type : extract_domain_name(type, next_coro = filter_coro)
         for _, type in sources
     }
 
     with PipedCoroutines(
-        *extractors.values(), filter_1st_pass, collector_1st_pass
+        *extractor_coros.values(), filter_coro, collector_coro
     ):
-        start_downloading(sources, extractors)
+        start_downloading(sources, extractor_coros)
 
-    refined_database = []
-    collector_2nd_pass = collector(refined_database)
-    filter_2nd_pass = wildcard_miss_filter(database, next_coro = collector_2nd_pass)
+    database_2ndpass = []
+    collector_coro = collector(database_2ndpass)
+    filter_coro = wildcard_miss_filter(database_1stpass, next_coro = collector_coro)
 
     with PipedCoroutines(
-        collector_2nd_pass, filter_2nd_pass
+        collector_coro, filter_coro
     ):
-        for x in database:
-            filter_2nd_pass.send(x)
-    return refined_database
+        for x in database_1stpass:
+            filter_coro.send(x)
+
+    print(f"Wildcard domains collected: {len(database_2ndpass):,}")
+    return database_2ndpass
 
 
 def start_downloading(
