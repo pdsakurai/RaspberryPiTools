@@ -215,7 +215,7 @@ def writer(
 ) -> typing.Coroutine[None, str, None]:
     from tempfile import TemporaryDirectory, mkstemp
     with TemporaryDirectory() as temp_dir:
-        temp_file_fd, temp_file_path = mkstemp(dir=temp_dir)
+        temp_file_fd, temp_file_path = mkstemp(dir=temp_dir, text=True)
         print(f"Temporary file created: {temp_file_path}")
 
         cached_lines = []
@@ -224,8 +224,7 @@ def writer(
             cached_lines.clear()
 
         try:
-            from os import fdopen
-            with fdopen(temp_file_fd, mode="w") as temp_file:
+            with open(temp_file_fd, mode="w") as temp_file:
                 cached_lines_max_count = 50000
                 while True:
                     cached_lines.append(f'{(yield)}\n')
