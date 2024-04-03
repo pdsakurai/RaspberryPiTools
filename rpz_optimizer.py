@@ -133,7 +133,7 @@ def extract_domain_name(
                 next_coro.send(matches["domain_name"].removeprefix("*."))
 
     finally:
-        print(f'Domain names extracted from "{source_type}"-formatted source: {domain_names_extracted:,}')
+        print(f'Extracted domains from "{source_type}"-formatted source: {domain_names_extracted:,}')
 
 
 def wildcard_miss_filter_impl(database, line):
@@ -174,22 +174,19 @@ def wildcard_miss_filter(
 
 def unique_filter(
     *,
-    what_are_filtered_out: str = None,
+    what_are_filtered: str = None,
     database: typing.Sequence[str] = [],
     next_coro: typing.Coroutine[typing.Any, str, typing.Any] = None
 ) -> typing.Coroutine[None, str, None]:
     try:
-        duplicates_count = 0
         while True:
             if (line := (yield)) not in database:
                 database.append(line)
                 if next_coro:
                     next_coro.send(line)
-            else:
-                duplicates_count += 1
     finally:
-        if what_are_filtered_out:
-            print(f"Duplicate {what_are_filtered_out} filtered out: {duplicates_count:,}")
+        if what_are_filtered:
+            print(f"Filtered {what_are_filtered} domains: {len(database):,}")
 
 
 def hasher(
@@ -230,7 +227,6 @@ def writer(
     from tempfile import TemporaryDirectory, mkstemp
     with TemporaryDirectory() as temp_dir:
         temp_file_fd, temp_file_path = mkstemp(dir=temp_dir, text=True)
-        print(f"Temporary file created: {temp_file_path}")
 
         cached_lines = []
         def flush_cached_lines(file:typing.TextIO) -> None:
@@ -285,9 +281,7 @@ def writer(
             if get_md5(destination_file) != get_md5(temp_file_path):
                 from shutil import move
                 move(temp_file_path, destination_file)
-                print(f"Temporary file moved to: {destination_file}")
-            else:
-                print("Nothing changed; Deleting temporary file")
+                print(f"Updated: {destination_file}")
 
 
 class PipedCoroutines:
@@ -337,7 +331,7 @@ def collect_wildcard_domains(
         start_downloading(sources, extractor_coros)
 
     database_2ndpass = []
-    collector_coro = unique_filter(database=database_2ndpass)
+    collector_coro = unique_filter(database=database_2ndpass, what_are_filtered="wildcard domains")
     filter_coro = wildcard_miss_filter(database_1stpass, next_coro = collector_coro)
 
     with PipedCoroutines(
@@ -346,7 +340,6 @@ def collect_wildcard_domains(
         for x in database_1stpass:
             filter_coro.send(x)
 
-    print(f"Wildcard domains collected: {len(database_2ndpass):,}")
     return database_2ndpass
 
 
@@ -395,7 +388,7 @@ if __name__ == "__main__":
     next_coroutine = hasher = hasher(writer_coros=writers, rpz_formatter_coros=rpz_entry_formatters)
     coroutines.append(next_coroutine)
 
-    next_coroutine = collector = unique_filter(next_coro=next_coroutine, what_are_filtered_out="domains")
+    next_coroutine = collector = unique_filter(next_coro=next_coroutine, what_are_filtered="non-wildcard domains")
     coroutines.append(next_coroutine)
 
     wildcard_domains = []
