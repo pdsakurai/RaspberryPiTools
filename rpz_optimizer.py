@@ -213,65 +213,66 @@ def writer(
     destination_file: str,
     processing_duration : typing.Callable[[None], str] = None
 ) -> typing.Coroutine[None, str, None]:
-    from tempfile import mkstemp
-    temp_file_fd, temp_file_path = mkstemp()
-    print(f"Temporary file created: {temp_file_path}")
+    from tempfile import TemporaryDirectory, mkstemp
+    with TemporaryDirectory() as temp_dir:
+        temp_file_fd, temp_file_path = mkstemp(dir=temp_dir)
+        print(f"Temporary file created: {temp_file_path}")
 
-    cached_lines = []
-    def flush_cached_lines(file:typing.TextIO) -> None:
-        file.writelines(cached_lines)
-        cached_lines.clear()
+        cached_lines = []
+        def flush_cached_lines(file:typing.TextIO) -> None:
+            file.writelines(cached_lines)
+            cached_lines.clear()
 
-    try:
-        from os import fdopen
-        with fdopen(temp_file_fd, mode="w") as temp_file:
-            cached_lines_max_count = 50000
-            while True:
-                cached_lines.append(f'{(yield)}\n')
-                if len(cached_lines) == cached_lines_max_count:
+        try:
+            from os import fdopen
+            with fdopen(temp_file_fd, mode="w") as temp_file:
+                cached_lines_max_count = 50000
+                while True:
+                    cached_lines.append(f'{(yield)}\n')
+                    if len(cached_lines) == cached_lines_max_count:
+                        flush_cached_lines(temp_file)
+        finally:
+            if processing_duration:
+                cached_lines.append(processing_duration())
+
+            if cached_lines:
+                with open(temp_file_path, mode="a") as temp_file:
                     flush_cached_lines(temp_file)
-    finally:
-        if processing_duration:
-            cached_lines.append(processing_duration())
 
-        if cached_lines:
-            with open(temp_file_path, mode="a") as temp_file:
-                flush_cached_lines(temp_file)
+            def get_md5() -> typing.Callable[[str], str]:
+                def reverse_readline(
+                    file_path:str
+                ) -> typing.Generator[str, None, None]:
+                    with open(file_path) as file:
+                        from os import SEEK_END
+                        first_line = file.readline()
+                        index = file.seek(0, SEEK_END)
+                        length = 0
+                        while (index := index - 1) > 0:
+                            if file.read(1) == "\n" and length > 1:
+                                yield file.readline()
+                                length = 0
+                            from os import SEEK_SET
+                            file.seek(index, SEEK_SET)
+                            length += 1
+                    yield first_line
+                from re import compile
+                md5_pattern = compile(r"md5sum:\s(?P<hexdigest>\w{32})")
+                def _impl(
+                    file_path: str
+                ) -> str:
+                    for line in reverse_readline(file_path):
+                        if found_md5 := md5_pattern.search(line):
+                            return found_md5["hexdigest"]
+                return _impl
+            get_md5 = get_md5()
 
-        def get_md5() -> typing.Callable[[str], str]:
-            def reverse_readline(
-                file_path:str
-            ) -> typing.Generator[str, None, None]:
-                with open(file_path) as file:
-                    from os import SEEK_END
-                    first_line = file.readline()
-                    index = file.seek(0, SEEK_END)
-                    length = 0
-                    while (index := index - 1) > 0:
-                        if file.read(1) == "\n" and length > 1:
-                            yield file.readline()
-                            length = 0
-                        from os import SEEK_SET
-                        file.seek(index, SEEK_SET)
-                        length += 1
-                yield first_line
-            from re import compile
-            md5_pattern = compile(r"md5sum:\s(?P<hexdigest>\w{32})")
-            def _impl(
-                file_path: str
-            ) -> str:
-                for line in reverse_readline(file_path):
-                    if found_md5 := md5_pattern.search(line):
-                        return found_md5["hexdigest"]
-            return _impl
-        get_md5 = get_md5()
-
-        if get_md5(destination_file) != get_md5(temp_file_path):
-            from shutil import move
-            move(temp_file_path, destination_file)
-            print(f"Temporary file moved to: {destination_file}")
-        else:
-            print("Nothing changed; Deleting temporary file")
+            if get_md5(destination_file) != get_md5(temp_file_path):
+                from shutil import move
+                move(temp_file_path, destination_file)
+                print(f"Temporary file moved to: {destination_file}")
+            else:
+                print("Nothing changed; Deleting temporary file")
 
 
 class PipedCoroutines:
