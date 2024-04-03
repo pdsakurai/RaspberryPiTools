@@ -246,7 +246,9 @@ def writer(
                         flush_cached_lines(temp_file)
         finally:
             if processing_duration:
-                cached_lines.append(processing_duration())
+                log = processing_duration()
+                print(log)
+                cached_lines.append(f"; {log}")
 
             if cached_lines:
                 with open(temp_file_path, mode="a") as temp_file:
@@ -306,16 +308,16 @@ def downloader(
     source_type: SourceTypes,
     extractor: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, typing.Any, None]:
+    log = f"\"{source_type}\"-formatted source: {url}"
     try:
         from urllib import request
         with request.urlopen(url) as src_file:
-            print(f'Processing "{source_type}"-formatted source: {url}')
             for line in src_file:
                 (yield)
                 extractor.send(line.decode())
-            print(f"Done processing: {url}")
+            print(f"Downloaded {log}")
     except request.URLError:
-        print(f'Cannot process "{source_type}"-formatted source: {url}')
+        print(f'Cannot download {log}')
 
 
 def collect_wildcard_domains(
@@ -374,7 +376,7 @@ if __name__ == "__main__":
     def get_processing_duration() -> typing.Callable[[None],str]:
         from datetime import datetime
         start = datetime.now()
-        return lambda : f"; Processed in: {datetime.now() - start}"
+        return lambda : f"Processed in: {datetime.now() - start}"
     get_processing_duration = get_processing_duration()
 
     args = get_arguments()
