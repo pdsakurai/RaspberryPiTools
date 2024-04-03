@@ -136,26 +136,40 @@ def extract_domain_name(
         print(f'Domain names extracted from "{source_type}"-formatted source: {domain_names_extracted:,}')
 
 
+def wildcard_miss_filter_impl(database, line):
+    parent = line.split(".")
+    has_hit = False
+    while len(parent := parent[1:]) >= 2 and not (has_hit:= ".".join(parent) in database):
+        pass
+    return None if has_hit else line
+
+
 def wildcard_miss_filter(
     database: typing.Sequence[str],
     next_coro: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, str, None]:
-    try:
-        duplicates_count = 0
-        while True:
-            line = (yield)
-            parent = line.split(".")
-            has_hit = False
+    from multiprocessing import pool, cpu_count
+    cpu_count = 3
+    with pool.Pool(cpu_count) as pool:
+        task_share = 1000
+        cached_lines_max = cpu_count * task_share
+        cached_lines = []
 
-            while len(parent := parent[1:]) >= 2 and not (has_hit:= ".".join(parent) in database):
-                pass
+        def flush_cached_lines():
+            from functools import partial
+            for x in pool.imap(func=partial(wildcard_miss_filter_impl, database), iterable=cached_lines, chunksize=task_share):
+                if x:
+                    next_coro.send(x)
+            cached_lines.clear()
 
-            if has_hit:
-                duplicates_count += 1
-            else:
-                next_coro.send(line)
-    finally:
-        print(f"Wildcard hits filtered out: {duplicates_count:,}")
+        try:
+            while True:
+                cached_lines.append((yield))
+                if len(cached_lines) == cached_lines_max:
+                    flush_cached_lines()
+        finally:
+            flush_cached_lines()
+
 
 
 def unique_filter(
@@ -325,7 +339,7 @@ def collect_wildcard_domains(
     filter_coro = wildcard_miss_filter(database_1stpass, next_coro = collector_coro)
 
     with PipedCoroutines(
-        collector_coro, filter_coro
+        filter_coro, collector_coro
     ):
         for x in database_1stpass:
             filter_coro.send(x)
