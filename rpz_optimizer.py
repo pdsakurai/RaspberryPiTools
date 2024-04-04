@@ -157,7 +157,8 @@ def wildcard_miss_filter(
 
         def flush_cached_lines():
             from functools import partial
-            for x in pool.imap(func=partial(wildcard_miss_filter_impl, database), iterable=cached_lines, chunksize=task_share):
+            from math import ceil
+            for x in pool.imap(func=partial(wildcard_miss_filter_impl, database), iterable=cached_lines, chunksize=ceil(len(cached_lines)/cpu_count)):
                 if x:
                     next_coro.send(x)
             cached_lines.clear()
@@ -168,7 +169,8 @@ def wildcard_miss_filter(
                 if len(cached_lines) == cached_lines_max:
                     flush_cached_lines()
         finally:
-            flush_cached_lines()
+            if cached_lines:
+                flush_cached_lines()
 
 
 
