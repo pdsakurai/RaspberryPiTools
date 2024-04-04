@@ -305,13 +305,15 @@ def downloader(
     log = f"\"{source_type}\"-formatted source: {url}"
     try:
         from urllib import request
-        with request.urlopen(url) as src_file:
+        with request.urlopen(url, timeout=15) as src_file:
             for line in src_file:
                 (yield)
                 extractor.send(line.decode())
             print(f"Downloaded {log}")
     except request.URLError:
         print(f'Cannot download {log}')
+        print("Aborting operation...")
+        exit(1)
 
 
 def sink(
