@@ -177,15 +177,13 @@ def wildcard_miss_filter(
 def unique_filter(
     *,
     what_are_filtered: str = None,
-    database: typing.Sequence[str] = [],
-    next_coro: typing.Coroutine[typing.Any, str, typing.Any] = None
+    database: typing.Sequence[str],
+    next_coro: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, str, None]:
     try:
         while True:
             if (line := (yield)) not in database:
-                database.append(line)
-                if next_coro:
-                    next_coro.send(line)
+                next_coro.send(line)
     finally:
         if what_are_filtered:
             print(f"Filtered {what_are_filtered} domains: {len(database):,}")
@@ -316,31 +314,45 @@ def downloader(
         print(f'Cannot download {log}')
 
 
+def sink(
+    database: typing.Sequence[str],
+    next_coro: typing.Coroutine[typing.Any, str, typing.Any] = None
+) -> typing.Coroutine[None, typing.Any, None]:
+    try:
+        while True:
+            line = (yield)
+            database.append(line)
+            if next_coro:
+                next_coro.send(line)
+    finally:
+        pass
+
 def collect_wildcard_domains(
     sources : typing.Sequence[typing.Tuple[str, SourceTypes]]
 ) -> typing.Sequence[str]:
     database_1stpass = []
-    collector_coro = unique_filter(database=database_1stpass)
-    filter_coro = wildcard_miss_filter(database_1stpass, next_coro = collector_coro)
+    sink_coro = sink(database_1stpass)
+    unique_filter_coro = unique_filter(database=database_1stpass, next_coro=sink_coro)
+    wildcard_filter_coro = wildcard_miss_filter(database_1stpass, next_coro = unique_filter_coro)
     extractor_coros = {
-        type : extract_domain_name(type, next_coro = filter_coro)
+        type : extract_domain_name(type, next_coro = wildcard_filter_coro)
         for _, type in sources
     }
 
     with PipedCoroutines(
-        *extractor_coros.values(), filter_coro, collector_coro
+        *extractor_coros.values(), wildcard_filter_coro, unique_filter_coro, sink_coro
     ):
         start_downloading(sources, extractor_coros)
 
     database_2ndpass = []
-    collector_coro = unique_filter(database=database_2ndpass, what_are_filtered="wildcard domains")
-    filter_coro = wildcard_miss_filter(database_1stpass, next_coro = collector_coro)
+    sink_coro = sink(database_2ndpass)
+    wildcard_filter_coro = wildcard_miss_filter(database_1stpass, next_coro = sink_coro)
 
     with PipedCoroutines(
-        filter_coro, collector_coro
+        wildcard_filter_coro, sink_coro
     ):
         for x in database_1stpass:
-            filter_coro.send(x)
+            wildcard_filter_coro.send(x)
 
     return database_2ndpass
 
@@ -390,7 +402,11 @@ if __name__ == "__main__":
     next_coroutine = hasher = hasher(writer_coros=writers, rpz_formatter_coros=rpz_entry_formatters)
     coroutines.append(next_coroutine)
 
-    next_coroutine = collector = unique_filter(next_coro=next_coroutine, what_are_filtered="non-wildcard domains")
+    unique_domains = []
+    next_coroutine = sink_coro = sink(database=unique_domains, next_coro=next_coroutine)
+    coroutines.append(next_coroutine)
+
+    next_coroutine = unique_filter(database=unique_domains, next_coro=next_coroutine, what_are_filtered="domains")
     coroutines.append(next_coroutine)
 
     wildcard_domains = []
@@ -425,7 +441,7 @@ if __name__ == "__main__":
                 x.send(line)
 
         for x in wildcard_domains:
-            collector.send(f'{x}')
+            sink_coro.send(f'{x}')
             hasher.send(f'*.{x}')
 
         start_downloading(sources, extractors)
