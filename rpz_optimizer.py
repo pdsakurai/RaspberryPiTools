@@ -136,19 +136,21 @@ def extract_domain_name(
         print(f'Extracted domains from "{source_type}"-formatted source: {domain_names_extracted:,}')
 
 
-def wildcard_miss_filter_impl(database, line):
-    parent = line.split(".")
+def wildcard_miss_filter_impl(database, is_line_a_nonwildcard, line):
+    parent = line.split(".") if is_line_a_nonwildcard else line.split(".")[1:]
     has_hit = False
-    while len(parent := parent[1:]) >= 2 and not (has_hit:= ".".join(parent) in database):
+    while not (has_hit:= ".".join(parent) in database) and len(parent := parent[1:]) >= 2:
         pass
     return None if has_hit else line
 
 
 def wildcard_miss_filter(
+    *,
+    are_inputs_nonwildcard = False,
     database: typing.Sequence[str],
     next_coro: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, str, None]:
-    from multiprocessing import pool, cpu_count
+    from multiprocessing import pool
     cpu_count = 3
     with pool.Pool(cpu_count) as pool:
         task_share = 1000
@@ -158,7 +160,7 @@ def wildcard_miss_filter(
         def flush_cached_lines():
             from functools import partial
             from math import ceil
-            for x in pool.imap(func=partial(wildcard_miss_filter_impl, database), iterable=cached_lines, chunksize=ceil(len(cached_lines)/cpu_count)):
+            for x in pool.imap(func=partial(wildcard_miss_filter_impl, database, are_inputs_nonwildcard), iterable=cached_lines, chunksize=ceil(len(cached_lines)/cpu_count)):
                 if x:
                     next_coro.send(x)
             cached_lines.clear()
@@ -171,7 +173,6 @@ def wildcard_miss_filter(
         finally:
             if cached_lines:
                 flush_cached_lines()
-
 
 
 def unique_filter(
@@ -329,13 +330,14 @@ def sink(
     finally:
         pass
 
+
 def collect_wildcard_domains(
     sources : typing.Sequence[typing.Tuple[str, SourceTypes]]
 ) -> typing.Sequence[str]:
     database_1stpass = []
     sink_coro = sink(database_1stpass)
     unique_filter_coro = unique_filter(database=database_1stpass, next_coro=sink_coro)
-    wildcard_filter_coro = wildcard_miss_filter(database_1stpass, next_coro = unique_filter_coro)
+    wildcard_filter_coro = wildcard_miss_filter(database=database_1stpass, next_coro = unique_filter_coro)
     extractor_coros = {
         type : extract_domain_name(type, next_coro = wildcard_filter_coro)
         for _, type in sources
@@ -348,7 +350,7 @@ def collect_wildcard_domains(
 
     database_2ndpass = []
     sink_coro = sink(database_2ndpass)
-    wildcard_filter_coro = wildcard_miss_filter(database_1stpass, next_coro = sink_coro)
+    wildcard_filter_coro = wildcard_miss_filter(database=database_1stpass, next_coro = sink_coro)
 
     with PipedCoroutines(
         wildcard_filter_coro, sink_coro
@@ -356,6 +358,7 @@ def collect_wildcard_domains(
         for x in database_1stpass:
             wildcard_filter_coro.send(x)
 
+    print(f"Filtered wildcard domains: {len(database_2ndpass)}")
     return database_2ndpass
 
 
@@ -408,7 +411,7 @@ if __name__ == "__main__":
     next_coroutine = sink_coro = sink(database=unique_domains, next_coro=next_coroutine)
     coroutines.append(next_coroutine)
 
-    next_coroutine = unique_filter(database=unique_domains, next_coro=next_coroutine, what_are_filtered="domains")
+    next_coroutine = unique_filter(database=unique_domains, next_coro=next_coroutine, what_are_filtered="non-wildcard")
     coroutines.append(next_coroutine)
 
     wildcard_domains = []
@@ -419,7 +422,7 @@ if __name__ == "__main__":
         if type in source_types[SourceTypesCategory.wildcard]
     ]:
         wildcard_domains = collect_wildcard_domains(wildcard_sources)
-        next_coroutine = wildcard_miss_filter(wildcard_domains, next_coro=next_coroutine)
+        next_coroutine = wildcard_miss_filter(are_inputs_nonwildcard=True, database=wildcard_domains, next_coro=next_coroutine)
         coroutines.append(next_coroutine)
         wildcard_sources = []
 
@@ -443,7 +446,7 @@ if __name__ == "__main__":
                 x.send(line)
 
         for x in wildcard_domains:
-            sink_coro.send(f'{x}')
+            hasher.send(f'{x}')
             hasher.send(f'*.{x}')
 
         start_downloading(sources, extractors)
