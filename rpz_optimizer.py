@@ -156,23 +156,33 @@ def wildcard_miss_filter(
         task_share = 1000
         cached_lines_max = cpu_count * task_share
         cached_lines = []
+        results = []
 
-        def flush_cached_lines():
+        def forward_results():
+            for missed_line in (missed_line for generator in results for missed_line in generator if missed_line):
+                next_coro.send(missed_line)
+            results.clear()
+
+        def distribute_tasks():
             from functools import partial
             from math import ceil
-            for x in pool.imap(func=partial(wildcard_miss_filter_impl, database, are_inputs_nonwildcard), iterable=cached_lines, chunksize=ceil(len(cached_lines)/cpu_count)):
-                if x:
-                    next_coro.send(x)
+            results.append(
+                pool.imap(
+                    func=partial(wildcard_miss_filter_impl, database, are_inputs_nonwildcard), 
+                    iterable=cached_lines.copy(), 
+                    chunksize=ceil(len(cached_lines)/cpu_count)))
             cached_lines.clear()
 
         try:
             while True:
                 cached_lines.append((yield))
                 if len(cached_lines) == cached_lines_max:
-                    flush_cached_lines()
+                    forward_results()
+                    distribute_tasks()
         finally:
             if cached_lines:
-                flush_cached_lines()
+                distribute_tasks()
+            forward_results()
 
 
 def unique_filter(
