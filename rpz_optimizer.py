@@ -155,7 +155,7 @@ def wildcard_miss_filter(
     from multiprocessing import pool
     cpu_count = 4 # Use case: RPi 3B+
     with pool.Pool(cpu_count) as pool:
-        task_share = 250
+        task_share = 333
         cached_lines_max = cpu_count * task_share
         cached_lines = []
         results = []
