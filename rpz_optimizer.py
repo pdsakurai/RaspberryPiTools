@@ -239,27 +239,17 @@ def writer(
     with TemporaryDirectory() as temp_dir:
         temp_file_fd, temp_file_path = mkstemp(dir=temp_dir, text=True)
 
-        cached_lines = []
-        def flush_cached_lines(file:typing.TextIO) -> None:
-            file.writelines(cached_lines)
-            cached_lines.clear()
-
         try:
             with open(temp_file_fd, mode="w") as temp_file:
-                cached_lines_max_count = 50000
                 while True:
-                    cached_lines.append(f'{(yield)}\n')
-                    if len(cached_lines) == cached_lines_max_count:
-                        flush_cached_lines(temp_file)
+                    temp_file.write(f'{(yield)}\n')
+
         finally:
             if processing_duration:
-                log = processing_duration()
-                print(log)
-                cached_lines.append(f"; {log}")
-
-            if cached_lines:
                 with open(temp_file_path, mode="a") as temp_file:
-                    flush_cached_lines(temp_file)
+                    processing_duration = processing_duration()
+                    print(processing_duration)
+                    temp_file.write(f"; {processing_duration}")
 
             def get_md5() -> typing.Callable[[str], str]:
                 def reverse_readline(
