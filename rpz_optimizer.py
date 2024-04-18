@@ -439,8 +439,7 @@ if __name__ == "__main__":
     }
     coroutines.extend(extractors.values())
 
-    coroutines.reverse()
-    with PipedCoroutines(*coroutines):
+    with PipedCoroutines(*reversed(coroutines)):
         for line in header_generator(
             args.source_url, args.name_server, args.email_address
         ):
