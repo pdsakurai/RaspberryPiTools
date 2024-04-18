@@ -357,8 +357,8 @@ def collect_wildcard_domains(
     with PipedCoroutines(
         wildcard_filter_coro, sink_coro
     ):
-        for x in database_1stpass:
-            wildcard_filter_coro.send(x)
+        while database_1stpass:
+            wildcard_filter_coro.send(database_1stpass.pop())
 
     print(f"Filtered wildcard domains: {len(database_2ndpass)}")
     return database_2ndpass
