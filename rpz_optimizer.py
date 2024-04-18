@@ -151,17 +151,19 @@ def wildcard_miss_filter(
     next_coro: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, str, None]:
     from multiprocessing import pool
-    cpu_count = 3
+    cpu_count = 3 # Use case: RPi 3B+
     with pool.Pool(cpu_count) as pool:
-        task_share = 1000
+        task_share = 999
         cached_lines_max = cpu_count * task_share
         cached_lines = []
         results = []
 
         def forward_results():
-            for missed_line in (missed_line for generator in results for missed_line in generator if missed_line):
-                next_coro.send(missed_line)
-            results.clear()
+            while results:
+                generator = results.pop()
+                for missed_line in generator:
+                    if missed_line:
+                        next_coro.send(missed_line)
 
         def distribute_tasks():
             from functools import partial
