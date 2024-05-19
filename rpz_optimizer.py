@@ -450,6 +450,7 @@ if __name__ == "__main__":
 
         for x in wildcard_domains:
             hasher.send(f'{x}')
-            hasher.send(f'*.{x}')
+            for y in rpz_entry_formatters:
+                y.send(f'*.{x}')
 
         start_downloading(sources, extractors)
