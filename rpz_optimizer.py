@@ -128,9 +128,11 @@ def extract_domain_name(
         domain_name_pattern = create_domain_name_pattern()
         domain_names_extracted = 0
         while True:
-            if matches := domain_name_pattern.match((yield)):
+            if (match := domain_name_pattern.match((yield))) \
+                and (match := match["domain_name"]) \
+                and not match.endswith("."):
                 domain_names_extracted += 1
-                next_coro.send(matches["domain_name"].removeprefix("*."))
+                next_coro.send(match.removeprefix("*."))
 
     finally:
         print(f'Extracted domains from "{source_type}"-formatted source: {domain_names_extracted:,}')
