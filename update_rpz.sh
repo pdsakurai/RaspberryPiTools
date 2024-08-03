@@ -54,11 +54,11 @@ readonly GITHUB_DIR="/mnt/dietpi_userdata/GitHub"
 readonly RPZ_DIR="$GITHUB_DIR/response_policy_zones"
 
 cd "$RPZ_DIR"
-git fetch --depth 1 origin master
-git reset --hard origin/master
-#git pull
+git pull
+git restore .
+git reset --soft HEAD~
 update_rpz_files
 are_there_changes && {
     git commit -a --message "${1:-Updated by cron.daily}"
-    git push
+    git push --force
 }
