@@ -259,19 +259,22 @@ def writer(
                 def reverse_readline(
                     file_path:str
                 ) -> typing.Generator[str, None, None]:
-                    with open(file_path) as file:
-                        from os import SEEK_END
-                        first_line = file.readline()
-                        index = file.seek(0, SEEK_END)
-                        length = 0
-                        while (index := index - 1) > 0:
-                            if file.read(1) == "\n" and length > 1:
-                                yield file.readline()
-                                length = 0
-                            from os import SEEK_SET
-                            file.seek(index, SEEK_SET)
-                            length += 1
-                    yield first_line
+                    try:
+                        with open(file_path) as file:
+                            from os import SEEK_END
+                            first_line = file.readline()
+                            index = file.seek(0, SEEK_END)
+                            length = 0
+                            while (index := index - 1) > 0:
+                                if file.read(1) == "\n" and length > 1:
+                                    yield file.readline()
+                                    length = 0
+                                from os import SEEK_SET
+                                file.seek(index, SEEK_SET)
+                                length += 1
+                        yield first_line
+                    except:
+                        yield ''
                 from re import compile
                 md5_pattern = compile(r"md5sum:\s(?P<hexdigest>\w{32})")
                 def _impl(
