@@ -7,10 +7,13 @@ class SourceTypes(StrEnum):
     host = auto()
     rpz_nonwildcard_only = auto()
     rpz_wildcard_only = auto()
+    whitelisted_domain = auto()
+    whitelisted_host = auto()
 
 class SourceTypesCategory(StrEnum):
     nonwildcard = auto()
     wildcard = auto()
+    whitelist = auto()
 
 source_types = {
     SourceTypesCategory.wildcard: [
@@ -21,6 +24,10 @@ source_types = {
         SourceTypes.domain,
         SourceTypes.host,
         SourceTypes.rpz_nonwildcard_only
+    ],
+    SourceTypesCategory.whitelist: [
+        SourceTypes.whitelisted_domain,
+        SourceTypes.whitelisted_host
     ]
 }
 
@@ -115,9 +122,9 @@ def extract_domain_name(
     def create_domain_name_pattern():
         from re import compile, IGNORECASE
         match (source_type):
-            case SourceTypes.domain | SourceTypes.domain_as_wildcard:
+            case SourceTypes.domain | SourceTypes.domain_as_wildcard | SourceTypes.whitelisted_domain:
                 return compile(r"^(?!#)(?P<domain_name>\S+)")
-            case SourceTypes.host:
+            case SourceTypes.host | SourceTypes.whitelisted_host:
                 return compile(r"^(0.0.0.0)\s+(?!\1)(?P<domain_name>\S+)")
             case SourceTypes.rpz_nonwildcard_only:
                 return compile(r"^(?P<domain_name>(?=\w).+)(\s+CNAME\s+\.)", IGNORECASE)
@@ -339,7 +346,8 @@ def sink(
 
 
 def collect_wildcard_domains(
-    sources : typing.Sequence[typing.Tuple[str, SourceTypes]]
+    sources : typing.Sequence[typing.Tuple[str, SourceTypes]],
+    whitelist_database : typing.Sequence[str] = []
 ) -> typing.Sequence[str]:
     database_1stpass = []
     sink_coro = sink(database_1stpass)
@@ -357,7 +365,7 @@ def collect_wildcard_domains(
 
     database_2ndpass = []
     sink_coro = sink(database_2ndpass)
-    wildcard_filter_coro = wildcard_miss_filter(database=database_1stpass, next_coro = sink_coro)
+    wildcard_filter_coro = wildcard_miss_filter(database=database_1stpass+whitelist_database, next_coro = sink_coro)
 
     with PipedCoroutines(
         wildcard_filter_coro, sink_coro
@@ -421,14 +429,25 @@ if __name__ == "__main__":
     next_coroutine = unique_filter(database=unique_domains, next_coro=next_coroutine, what_are_filtered="non-wildcard")
     coroutines.append(next_coroutine)
 
-    wildcard_domains = []
     sources = list(zip(args.source_url, args.source_type))
+    whitelisted_domains = []
+    if whitelist_sources := [
+        (url,type)
+        for url, type in sources
+        if type in source_types[SourceTypesCategory.whitelist]
+    ]:
+        whitelisted_domains = collect_wildcard_domains(whitelist_sources)
+        next_coroutine = wildcard_miss_filter(are_inputs_nonwildcard=True, database=whitelisted_domains, next_coro=next_coroutine)
+        coroutines.append(next_coroutine)
+        whitelist_sources = []
+
+    wildcard_domains = []
     if wildcard_sources := [
         (url,type) 
         for url, type in sources
         if type in source_types[SourceTypesCategory.wildcard]
     ]:
-        wildcard_domains = collect_wildcard_domains(wildcard_sources)
+        wildcard_domains = collect_wildcard_domains(wildcard_sources, whitelisted_domains)
         next_coroutine = wildcard_miss_filter(are_inputs_nonwildcard=True, database=wildcard_domains, next_coro=next_coroutine)
         coroutines.append(next_coroutine)
         wildcard_sources = []
