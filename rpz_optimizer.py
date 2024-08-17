@@ -160,7 +160,7 @@ def wildcard_miss_filter(
     next_coro: typing.Coroutine[typing.Any, str, typing.Any]
 ) -> typing.Coroutine[None, str, None]:
     from multiprocessing import pool
-    cpu_count = 4 # Use case: RPi 3B+
+    cpu_count = 3 # Use case: RPi 3B+
     with pool.Pool(cpu_count) as pool:
         task_share = 333
         cached_lines_max = cpu_count * task_share
