@@ -281,7 +281,7 @@ def writer(
                                 length += 1
                         yield first_line
                     except:
-                        yield ''
+                        return ''
                 from re import compile
                 md5_pattern = compile(r"md5sum:\s(?P<hexdigest>\w{32})")
                 def _impl(
