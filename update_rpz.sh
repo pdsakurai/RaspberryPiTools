@@ -58,7 +58,7 @@ readonly RPZ_DIR="$GITHUB_DIR/response_policy_zones"
 
 cd "$RPZ_DIR"
 git restore .
-git pull
+git pull --rebase
 git reset --soft HEAD~
 update_rpz_files
 are_there_changes && {
