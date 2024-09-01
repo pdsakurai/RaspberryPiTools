@@ -85,11 +85,11 @@ def header_generator(
 
     to_seconds = lambda **kwargs: int(timedelta(**kwargs).total_seconds())
     time_to_ = {
-        "expire SOA": to_seconds(hours=6),
-        "refresh": to_seconds(hours=12),
+        "expire SOA": to_seconds(hours=2),
+        "refresh": to_seconds(hours=1),
         "retry": to_seconds(minutes=1),
         "expire": to_seconds(days=30),
-        "expire NXDOMAIN cache": to_seconds(hours=6),
+        "expire NXDOMAIN cache": to_seconds(hours=2),
     }
 
     yield ""
