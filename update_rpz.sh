@@ -3,7 +3,7 @@
 function update_rpz_files() {
     local rpz_actions="null,nxdomain"
     local RPZ_OPTIMIZER_COMMON_OPTIONS="$( eval echo -a={$rpz_actions} ) -n users.noreply.github.com -e 23254804+pdsakurai@users.noreply.github.com"
-    local WHITELIST_OPTIONS='-t "whitelisted_domain" -s "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt ' \
+    local WHITELIST_OPTIONS='-t "whitelisted_domain" -s "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt" ' \
         '-t "whitelisted_domain" -s "https://raw.githubusercontent.com/pdsakurai/RaspberryPiTools/refs/heads/main/whitelist"'
     local RUN_RPZ_OPTIMIZER="python3 $GITHUB_DIR/RaspberryPiTools/rpz_optimizer.py $RPZ_OPTIMIZER_COMMON_OPTIONS $WHITELIST_OPTIONS"
 
@@ -11,7 +11,7 @@ function update_rpz_files() {
         -t "domain_as_wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/doh-onlydomains.txt" \
         -t "domain_as_wildcard" -s "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/doh-vpn-proxy-bypass-onlydomains.txt" \
         -t "rpz_nonwildcard_only" -s "https://raw.githubusercontent.com/jpgpi250/piholemanual/master/DOH.rpz"
-        
+
 
     $RUN_RPZ_OPTIMIZER $( eval echo -d=$RPZ_DIR/{$rpz_actions}/family_protection.rpz ) \
         -t "host" -s "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-only/hosts" \
