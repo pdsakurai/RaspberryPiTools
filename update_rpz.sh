@@ -3,8 +3,7 @@
 function update_rpz_files() {
     local rpz_actions="null,nxdomain"
     local RPZ_OPTIMIZER_COMMON_OPTIONS="$( eval echo -a={$rpz_actions} ) -n users.noreply.github.com -e 23254804+pdsakurai@users.noreply.github.com"
-    local WHITELIST_OPTIONS='-t "whitelisted_domain" -s "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt" ' \
-        '-t "whitelisted_domain" -s "https://raw.githubusercontent.com/pdsakurai/RaspberryPiTools/refs/heads/main/whitelist"'
+    local WHITELIST_OPTIONS='-t whitelisted_domain -s https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt -t whitelisted_domain -s https://raw.githubusercontent.com/pdsakurai/RaspberryPiTools/refs/heads/main/whitelist '
     local RUN_RPZ_OPTIMIZER="python3 $GITHUB_DIR/RaspberryPiTools/rpz_optimizer.py $RPZ_OPTIMIZER_COMMON_OPTIONS $WHITELIST_OPTIONS"
 
     $RUN_RPZ_OPTIMIZER $( eval echo -d=$RPZ_DIR/{$rpz_actions}/dns_bypass.rpz ) \
