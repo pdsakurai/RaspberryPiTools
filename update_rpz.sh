@@ -63,5 +63,5 @@ are_there_changes && {
     git commit -a --message "${1:-Updated by cron.daily}"
     git reset --soft HEAD~~
     git commit -a --message "${1:-Updated by cron.daily}"
-    git push --force
+    git push -u origin HEAD:master --force
 }
